@@ -1,0 +1,33 @@
+{
+  "title": "结果预览",
+  "columns": [
+    "shift",
+    "nurse_count",
+    "avg_tenure_years"
+  ],
+  "data": [
+    {
+      "shift": "白班",
+      "nurse_count": 6,
+      "avg_tenure_years": 8.0
+    },
+    {
+      "shift": "轮班",
+      "nurse_count": 7,
+      "avg_tenure_years": 6.14
+    },
+    {
+      "shift": "夜班",
+      "nurse_count": 7,
+      "avg_tenure_years": 10.43
+    }
+  ],
+  "metadata": {
+    "total_rows": 3,
+    "displayed_rows": 3,
+    "total_columns": 3,
+    "truncated": false,
+    "created_at": "20251111_172733",
+    "data_source": null
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "title": "结果预览",
+  "columns": [
+    "hospital_id",
+    "title",
+    "avg_salary"
+  ],
+  "data": [
+    {
+      "hospital_id": 1,
+      "title": "主任医师",
+      "avg_salary": 25000.0
+    },
+    {
+      "hospital_id": 1,
+      "title": "副主任医师",
+      "avg_salary": 22000.0
+    },
+    {
+      "hospital_id": 2,
+      "title": "主任医师",
+      "avg_salary": 26000.0
+    },
+    {
+      "hospital_id": 2,
+      "title": "副主任医师",
+      "avg_salary": 24000.0
+    },
+    {
+      "hospital_id": 2,
+      "title": "主治医师",
+      "avg_salary": 18000.0
+    },
+    {
+      "hospital_id": 3,
+      "title": "主治医师",
+      "avg_salary": 20000.0
+    },
+    {
+      "hospital_id": 3,
+      "title": "副主任医师",
+      "avg_salary": 20000.0
+    },
+    {
+      "hospital_id": 4,
+      "title": "主任医师",
+      "avg_salary": 27000.0
+    },
+    {
+      "hospital_id": 4,
+      "title": "主治医师",
+      "avg_salary": 16750.0
+    },
+    {
+      "hospital_id": 5,
+      "title": "主任医师",
+      "avg_salary": 23000.0
+    },
+    {
+      "hospital_id": 5,
+      "title": "主治医师",
+      "avg_salary": 17500.0
+    },
+    {
+      "hospital_id": 6,
+      "title": "副主任医师",
+      "avg_salary": 21000.0
+    },
+    {
+      "hospital_id": 6,
+      "title": "主治医师",
+      "avg_salary": 18500.0
+    },
+    {
+      "hospital_id": 7,
+      "title": "主任医师",
+      "avg_salary": 26500.0
+    },
+    {
+      "hospital_id": 7,
+      "title": "主治医师",
+      "avg_salary": 19000.0
+    },
+    {
+      "hospital_id": 8,
+      "title": "副主任医师",
+      "avg_salary": 22500.0
+    },
+    {
+      "hospital_id": 8,
+      "title": "主治医师",
+      "avg_salary": 18000.0
+    },
+    {
+      "hospital_id": 9,
+      "title": "主任医师",
+      "avg_salary": 25000.0
+    },
+    {
+      "hospital_id": 9,
+      "title": "主治医师",
+      "avg_salary": 19500.0
+    },
+    {
+      "hospital_id": 10,
+      "title": "主任医师",
+      "avg_salary": 27500.0
+    },
+    {
+      "hospital_id": 11,
+      "title": "副主任医师",
+      "avg_salary": 24000.0
+    },
+    {
+      "hospital_id": 12,
+      "title": "主治医师",
+      "avg_salary": 20000.0
+    },
+    {
+      "hospital_id": 15,
+      "title": "副主任医师",
+      "avg_salary": 23000.0
+    }
+  ],
+  "metadata": {
+    "total_rows": 23,
+    "displayed_rows": 23,
+    "total_columns": 3,
+    "truncated": false,
+    "created_at": "20251111_171113",
+    "data_source": null
+  }
+}

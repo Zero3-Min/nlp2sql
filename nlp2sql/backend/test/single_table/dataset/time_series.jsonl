@@ -1,0 +1,29 @@
+{"question": "查询2025年1月1日之后入院的病人", "sql": "SELECT name FROM patient_info WHERE admission_date >= '2025-01-01 00:00:00';"}
+{"question": "查找2024年12月31日之前出院的病人", "sql": "SELECT name FROM patient_info WHERE discharge_date < '2024-12-31 23:59:59';"}
+{"question": "统计2025年3月入院的病人数", "sql": "SELECT COUNT(*) FROM patient_info WHERE admission_date BETWEEN '2025-03-01 00:00:00' AND '2025-03-31 23:59:59';"}
+{"question": "查找2025年6月1日当天入院的病人", "sql": "SELECT name FROM patient_info WHERE DATE(admission_date) = '2025-06-01';"}
+{"question": "统计2025年1月15日到20日之间入院的病人", "sql": "SELECT COUNT(*) FROM patient_info WHERE admission_date BETWEEN '2025-01-15 00:00:00' AND '2025-01-20 23:59:59';"}
+
+{"question": "按月份统计2025年入院病人数", "sql": "SELECT DATE_FORMAT(admission_date, '%Y-%m') AS month, COUNT(*) AS count FROM patient_info WHERE YEAR(admission_date) = 2025 GROUP BY month;"}
+{"question": "统计每月出院的病人数", "sql": "SELECT DATE_FORMAT(discharge_date, '%Y-%m') AS month, COUNT(*) FROM patient_info GROUP BY month;"}
+{"question": "按季度统计病人入院数量", "sql": "SELECT QUARTER(admission_date) AS quarter, COUNT(*) FROM patient_info GROUP BY quarter;"}
+{"question": "查询2024年每月设备维护次数", "sql": "SELECT DATE_FORMAT(last_maintenance, '%Y-%m') AS month, COUNT(*) FROM equipment_info WHERE YEAR(last_maintenance)=2024 GROUP BY month;"}
+{"question": "按月份统计药品入库数量", "sql": "SELECT DATE_FORMAT(`created_at`, '%Y-%m') AS `month`, SUM(`stock_quantity`) AS `total_inbound` FROM `testdb`.`medicine_info` GROUP BY DATE_FORMAT(`created_at`, '%Y-%m') LIMIT 1000;"}
+
+{"question": "统计还未出院的病人数", "sql": "SELECT COUNT(*) FROM patient_info WHERE discharge_date IS NULL;"}
+{"question": "查询尚未维护的设备", "sql": "SELECT name FROM equipment_info WHERE last_maintenance IS NULL;"}
+{"question": "统计没有入院日期的病人记录", "sql": "SELECT COUNT(*) FROM patient_info WHERE admission_date IS NULL;"}
+{"question": "查找今年生产的药品", "sql": "SELECT * FROM `testdb`.`medicine_info` WHERE YEAR(`created_at`) = YEAR(CURDATE()) LIMIT 1000;"}
+{"question": "统计医院表中成立日期缺失的数量", "sql": "SELECT COUNT(*) FROM hospital_info WHERE established_date IS NULL;"}
+
+{"question": "统计每年每月的病人入院数量", "sql": "SELECT DATE_FORMAT(admission_date, '%Y-%m') AS ym, COUNT(*) FROM patient_info GROUP BY ym ORDER BY ym;"}
+{"question": "按年份统计医院成立数量", "sql": "SELECT YEAR(established_date) AS year, COUNT(*) FROM hospital_info GROUP BY year ORDER BY year;"}
+{"question": "按年统计药品入库次数", "sql": "SELECT YEAR(`created_at`) AS `year`, COUNT(*) AS `entry_count` FROM `testdb`.`medicine_info` GROUP BY YEAR(`created_at`) LIMIT 1000;"}
+{"question": "计算2024与2025年每月入院人数变化", "sql": "SELECT DATE_FORMAT(admission_date, '%Y-%m') AS month, COUNT(*) FROM patient_info WHERE YEAR(admission_date) IN (2024,2025) GROUP BY month ORDER BY month;"}
+{"question": "比较2023和2024年各月的病人出院数量", "sql": "SELECT DATE_FORMAT(discharge_date, '%Y-%m') AS month, COUNT(*) FROM patient_info WHERE YEAR(discharge_date) IN (2023,2024) GROUP BY month;"}
+
+{"question": "统计过去24小时内入院的病人", "sql": "SELECT name FROM patient_info WHERE admission_date >= CONVERT_TZ(NOW(), '+00:00', '+08:00') - INTERVAL 1 DAY;"}
+{"question": "查询北京时间今天入院的病人数量", "sql": "SELECT COUNT(*) FROM patient_info WHERE DATE(CONVERT_TZ(admission_date,'+00:00','+08:00')) = CURDATE();"}
+{"question": "统计上周维护的设备数量（按北京时间）", "sql": "SELECT COUNT(*) FROM equipment_info WHERE CONVERT_TZ(last_maintenance,'+00:00','+08:00') >= NOW() - INTERVAL 7 DAY;"}
+{"question": "查找昨天入院的病人", "sql": "SELECT name FROM patient_info WHERE DATE(CONVERT_TZ(admission_date,'+00:00','+08:00')) = DATE_SUB(CURDATE(), INTERVAL 1 DAY);"}
+{"question": "统计2025年2月在北京时间入院的病人数", "sql": "SELECT COUNT(*) FROM patient_info WHERE DATE_FORMAT(CONVERT_TZ(admission_date,'+00:00','+08:00'),'%Y-%m')='2025-02';"}

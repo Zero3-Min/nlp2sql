@@ -1,0 +1,29 @@
+{"question": "每个职称的医生人数和平均工资是多少？", "sql": "SELECT title, COUNT(*) AS doctor_count, ROUND(AVG(salary),2) AS avg_salary FROM doctor_info GROUP BY title;"}
+{"question": "统计每个医院的科室数量和平均床位数", "sql": "SELECT hospital_id, COUNT(*) AS dept_num, ROUND(AVG(bed_count),1) AS avg_bed FROM department_info GROUP BY hospital_id;"}
+{"question": "不同医院等级的数量与平均床位数", "sql": "SELECT level, COUNT(*) AS num, ROUND(AVG(total_beds),1) AS avg_beds FROM hospital_info GROUP BY level;"}
+{"question": "每个班次的护士数量与平均工资", "sql": "SELECT shift, COUNT(*) AS num, ROUND(AVG(salary),2) AS avg_salary FROM nurse_info GROUP BY shift;"}
+{"question": "各药品类别的药品数量与平均价格", "sql": "SELECT `category`, COUNT(`medicine_id`) AS `medicine_count`, ROUND(AVG(`unit_price`), 2) AS `avg_price` FROM `testdb`.`medicine_info` WHERE `category` IS NOT NULL GROUP BY `category`;"}
+
+{"question": "每个医院的医生数量和平均薪资", "sql": "SELECT hospital_id, COUNT(*) AS doctor_count, ROUND(AVG(salary),2) AS avg_salary FROM doctor_info GROUP BY hospital_id;"}
+{"question": "不同职称医生的人数与最高工资", "sql": "SELECT title, COUNT(*) AS doctor_count, MAX(salary) AS max_salary FROM doctor_info GROUP BY title;"}
+{"question": "各药品类别的数量与最高库存量", "sql": "SELECT category, COUNT(*) AS category_count, MAX(stock_quantity) AS max_stock FROM medicine_info GROUP BY category;"}
+{"question": "各医院等级的医院数量和平均床位", "sql": "SELECT level, COUNT(*) AS hospital_count, ROUND(AVG(total_beds),1) AS avg_beds FROM hospital_info GROUP BY level;"}
+{"question": "每个医院的平均床位数与成立时间", "sql": "SELECT `hospital_id`, `name`, ROUND(AVG(`total_beds`), 2) AS `avg_beds`, `established_date` FROM `testdb`.`hospital_info` GROUP BY `hospital_id`, `name`, `established_date`;"}
+
+{"question": "每个科室的医生人数与平均薪资", "sql": "SELECT dept_id, COUNT(*) AS doctor_count, ROUND(AVG(salary),2) AS avg_salary FROM doctor_info GROUP BY dept_id;"}
+{"question": "不同药品类别的药品数量与平均单价", "sql": "SELECT category, COUNT(*) AS num, ROUND(AVG(unit_price),2) AS avg_price FROM medicine_info GROUP BY category;"}
+{"question": "中成药的数量和平均价格", "sql": "SELECT COUNT(*) AS `中成药数量`, ROUND(AVG(`unit_price`), 2) AS `平均价格` FROM `testdb`.`medicine_info` WHERE `category` = '中成药' LIMIT 1000;"}
+{"question": "每个班次的护士数量与平均年龄", "sql": "SELECT shift, COUNT(*) AS nurse_count, ROUND(AVG(age),1) AS avg_age FROM nurse_info GROUP BY shift;"}
+{"question": "不同医院等级的医院数量与平均成立年份", "sql": "SELECT level, COUNT(*) AS num, ROUND(AVG(YEAR(established_date)),0) AS avg_year FROM hospital_info GROUP BY level;"}
+
+{"question": "每个职称医生的平均工资，保留两位小数", "sql": "SELECT title, ROUND(AVG(CAST(salary AS DECIMAL(10,2))),2) AS avg_salary FROM doctor_info GROUP BY title;"}
+{"question": "各医院平均床位数（取整）", "sql": "SELECT hospital_id, ROUND(AVG(total_beds)) AS avg_beds FROM hospital_info GROUP BY hospital_id;"}
+{"question": "每个药品类别的平均单价，保留两位小数", "sql": "SELECT category, ROUND(AVG(CAST(unit_price AS DECIMAL(10,2))),2) AS avg_price FROM medicine_info GROUP BY category;"}
+{"question": "不同班次护士平均工资与平均工龄，保留两位小数", "sql": "SELECT `shift`, ROUND(AVG(`salary`), 2) AS `avg_salary`, ROUND(AVG(TIMESTAMPDIFF(YEAR, `hire_date`, CURDATE())), 2) AS `avg_service_years` FROM `testdb`.`nurse_info` WHERE `shift` IS NOT NULL AND `salary` IS NOT NULL AND `hire_date` IS NOT NULL GROUP BY `shift` LIMIT 1000;"}
+{"question": "各职称医生的平均入职时间与平均工资", "sql": "SELECT `title`, ROUND(AVG(DATEDIFF(CURDATE(), `hire_date`)), 2) AS `avg_hire_days`, ROUND(AVG(`salary`), 2) AS `avg_salary` FROM `testdb`.`doctor_info` WHERE `title` IS NOT NULL AND `hire_date` IS NOT NULL GROUP BY `title` LIMIT 1000;"}
+
+{"question": "各科室医生人数与平均工资", "sql": "SELECT dept_id, COUNT(*) AS num_doctors, ROUND(AVG(salary),2) AS avg_salary FROM doctor_info GROUP BY dept_id;"}
+{"question": "每个医院的医生数量与平均薪资", "sql": "SELECT hospital_id, COUNT(*) AS num_doctors, ROUND(AVG(salary),2) AS avg_salary FROM doctor_info GROUP BY hospital_id;"}
+{"question": "每个班次的护士数量与平均工资", "sql": "SELECT shift, COUNT(*) AS num, ROUND(AVG(salary),2) AS avg_salary FROM nurse_info GROUP BY shift;"}
+{"question": "各药品类别的药品数量与平均库存量", "sql": "SELECT category, COUNT(*) AS num, ROUND(AVG(stock_quantity),1) AS avg_stock FROM medicine_info GROUP BY category;"}
+{"question": "各医院等级的医院数量与平均床位数", "sql": "SELECT level, COUNT(*) AS num, ROUND(AVG(total_beds),1) AS avg_beds FROM hospital_info GROUP BY level;"}

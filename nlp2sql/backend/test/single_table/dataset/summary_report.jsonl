@@ -1,0 +1,29 @@
+{"question": "统计每个医院的医生数量并添加总计", "sql": "SELECT IFNULL(hospital_id, '总计') AS hospital_id, COUNT(*) AS doctor_count FROM doctor_info GROUP BY hospital_id WITH ROLLUP;"}
+{"question": "统计每个科室医生人数并显示汇总行", "sql": "SELECT IFNULL(dept_id, '合计') AS dept, COUNT(*) AS num FROM doctor_info GROUP BY dept_id WITH ROLLUP;"}
+{"question": "统计各药品类别库存总量及总计", "sql": "SELECT IFNULL(category, '全部类别') AS category, SUM(stock_quantity) AS total_stock FROM medicine_info GROUP BY category WITH ROLLUP;"}
+{"question": "统计各班次护士人数并包含总人数", "sql": "SELECT IFNULL(shift, '总计') AS shift, COUNT(*) AS nurse_num FROM nurse_info GROUP BY shift WITH ROLLUP;"}
+{"question": "统计各医院等级的数量并显示合计行", "sql": "SELECT IFNULL(level, '总计') AS level, COUNT(*) AS hospital_count FROM hospital_info GROUP BY level WITH ROLLUP;"}
+
+{"question": "统计每个医院医生的工资总额和平均工资", "sql": "SELECT hospital_id, SUM(salary) AS total_salary, ROUND(AVG(salary),2) AS avg_salary FROM doctor_info GROUP BY hospital_id;"}
+{"question": "统计每个职称医生的总工资和人数", "sql": "SELECT title, SUM(salary) AS total_salary, COUNT(*) AS doctor_count FROM doctor_info GROUP BY title;"}
+{"question": "统计每个药品类别的库存总数和平均单价", "sql": "SELECT category, SUM(stock_quantity) AS total_stock, ROUND(AVG(unit_price),2) AS avg_price FROM medicine_info GROUP BY category;"}
+{"question": "按班次统计护士人数和平均工龄", "sql": "SELECT `shift`, COUNT(`nurse_id`) AS `nurse_count`, ROUND(AVG(TIMESTAMPDIFF(YEAR, `hire_date`, CURDATE())), 2) AS `avg_tenure_years` FROM `testdb`.`nurse_info` WHERE `shift` IS NOT NULL GROUP BY `shift` LIMIT 1000;"}
+{"question": "统计各医院等级的医院数量和平均床位数", "sql": "SELECT level, COUNT(*) AS hospital_num, ROUND(AVG(total_beds),1) AS avg_beds FROM hospital_info GROUP BY level;"}
+
+{"question": "统计每个医院各科室医生人数，并按医院汇总总计", "sql": "SELECT hospital_id, dept_id, COUNT(*) AS num FROM doctor_info GROUP BY hospital_id, dept_id WITH ROLLUP;"}
+{"question": "统计每个医院等级下各医院医生人数", "sql": "SELECT h.level, d.hospital_id, COUNT(*) AS num FROM doctor_info d JOIN hospital_info h ON d.hospital_id = h.hospital_id GROUP BY h.level, d.hospital_id WITH ROLLUP;"}
+{"question": "统计每个医院各职称医生数量和汇总", "sql": "SELECT hospital_id, title, COUNT(*) AS num FROM doctor_info GROUP BY hospital_id, title WITH ROLLUP;"}
+{"question": "按药品类别和生产厂家统计数量并汇总", "sql": "SELECT `category`, `supplier`, SUM(`stock_quantity`) AS `total_quantity` FROM `testdb`.`medicine_info` GROUP BY `category`, `supplier`;"}
+{"question": "统计各班次护士人数及按班次汇总总计", "sql": "SELECT shift, COUNT(*) AS num FROM nurse_info GROUP BY shift WITH ROLLUP;"}
+
+{"question": "统计医生总人数", "sql": "SELECT COUNT(*) AS total_doctors FROM doctor_info;"}
+{"question": "统计每个医院的医生人数（避免重复统计）", "sql": "SELECT hospital_id, COUNT(DISTINCT doctor_id) AS doctor_count FROM doctor_info GROUP BY hospital_id;"}
+{"question": "统计各科室医生人数及总计", "sql": "SELECT IFNULL(dept_id,'总计') AS dept_id, COUNT(DISTINCT doctor_id) AS num FROM doctor_info GROUP BY dept_id WITH ROLLUP;"}
+{"question": "统计医院等级的医院数量（避免重复）", "sql": "SELECT level, COUNT(DISTINCT hospital_id) AS num FROM hospital_info GROUP BY level;"}
+{"question": "统计药品类别的数量（不重复）", "sql": "SELECT category, COUNT(DISTINCT name) AS num FROM medicine_info GROUP BY category;"}
+
+{"question": "统计各职称医生人数并按人数降序排列", "sql": "SELECT title, COUNT(*) AS num FROM doctor_info GROUP BY title ORDER BY num DESC;"}
+{"question": "统计每个药品类别库存总量并按库存量降序排序", "sql": "SELECT category, SUM(stock_quantity) AS total_stock FROM medicine_info GROUP BY category ORDER BY total_stock DESC;"}
+{"question": "统计每个医院医生人数并在末尾显示汇总行", "sql": "SELECT IFNULL(hospital_id,'总计') AS hospital_id, COUNT(*) AS num FROM doctor_info GROUP BY hospital_id WITH ROLLUP ORDER BY hospital_id IS NULL, hospital_id;"}
+{"question": "统计各班次护士人数并按人数从多到少排序", "sql": "SELECT shift, COUNT(*) AS num FROM nurse_info GROUP BY shift ORDER BY num DESC;"}
+{"question": "统计医院等级的数量并保持‘总计’行在最后", "sql": "SELECT IFNULL(level,'总计') AS level, COUNT(*) AS num FROM hospital_info GROUP BY level WITH ROLLUP ORDER BY level IS NULL, level;"}

@@ -1,0 +1,29 @@
+{"question": "查找工资高于平均工资的医生", "sql": "SELECT name, salary FROM doctor_info WHERE salary > (SELECT AVG(salary) FROM doctor_info);"}
+{"question": "查找工资等于主任医师平均工资的医生", "sql": "SELECT name, salary FROM doctor_info WHERE salary = (SELECT AVG(salary) FROM doctor_info WHERE title='主任医师');"}
+{"question": "找出工资高于同科室平均工资的医生", "sql": "SELECT name, dept_id, salary FROM doctor_info WHERE salary > (SELECT AVG(salary) FROM doctor_info d2 WHERE d2.dept_id = doctor_info.dept_id);"}
+{"question": "查找属于平均工资最高职称的医生", "sql": "SELECT `doctor_id`, `name`, `title`, `salary` FROM `testdb`.`doctor_info` WHERE `title` = (SELECT `title` FROM `testdb`.`doctor_info` WHERE `title` IS NOT NULL GROUP BY `title` ORDER BY AVG(`salary`) DESC LIMIT 1);"}
+{"question": "找出药品价格高于本类别平均价格的药品", "sql": "SELECT name, category, unit_price FROM medicine_info WHERE unit_price > (SELECT AVG(unit_price) FROM medicine_info m2 WHERE m2.category = medicine_info.category);"}
+
+{"question": "工资高于平均工资的医生有哪些？", "sql": "SELECT name, salary FROM doctor_info WHERE salary > (SELECT AVG(salary) FROM doctor_info);"}
+{"question": "工资低于平均工资的护士有哪些？", "sql": "SELECT name, salary FROM nurse_info WHERE salary < (SELECT AVG(salary) FROM nurse_info);"}
+{"question": "药品价格高于平均价格的药品", "sql": "SELECT name, unit_price FROM medicine_info WHERE unit_price > (SELECT AVG(unit_price) FROM medicine_info);"}
+{"question": "床位数低于平均床位数的医院", "sql": "SELECT name, total_beds FROM hospital_info WHERE total_beds < (SELECT AVG(total_beds) FROM hospital_info);"}
+{"question": "年龄高于平均年龄的病人", "sql": "SELECT name, age FROM patient_info WHERE age > (SELECT AVG(age) FROM patient_info);"}
+
+{"question": "查找工资高于20000元的医生", "sql": "SELECT name, CAST(salary AS DECIMAL(10,2)) AS salary FROM doctor_info WHERE CAST(salary AS DECIMAL(10,2)) > 20000;"}
+{"question": "查找药品单价大于10元的药品", "sql": "SELECT name, CAST(unit_price AS DECIMAL(10,2)) FROM medicine_info WHERE CAST(unit_price AS DECIMAL(10,2)) > 10;"}
+{"question": "查询床位数大于300的医院", "sql": "SELECT name, CAST(total_beds AS SIGNED) AS beds FROM hospital_info WHERE CAST(total_beds AS SIGNED) > 300;"}
+{"question": "找出年龄大于40岁的病人", "sql": "SELECT name, CAST(age AS SIGNED) AS age FROM patient_info WHERE CAST(age AS SIGNED) > 40;"}
+{"question": "查询库存数量少于100的药品", "sql": "SELECT name, CAST(stock_quantity AS SIGNED) AS stock FROM medicine_info WHERE CAST(stock_quantity AS SIGNED) < 100;"}
+
+{"question": "查询工资在20000到30000之间的医生", "sql": "SELECT name, salary FROM doctor_info WHERE salary BETWEEN 20000 AND 30000;"}
+{"question": "查找年龄在30到40岁之间的病人", "sql": "SELECT name, age FROM patient_info WHERE age BETWEEN 30 AND 40;"}
+{"question": "统计药品价格在5元到20元之间的药品数量", "sql": "SELECT COUNT(*) FROM medicine_info WHERE unit_price BETWEEN 5 AND 20;"}
+{"question": "查找2025年1月1日至1月31日入院的病人", "sql": "SELECT name FROM patient_info WHERE admission_date BETWEEN '2025-01-01' AND '2025-01-31';"}
+{"question": "查询医院成立时间在2000年至2010年间的医院", "sql": "SELECT name FROM hospital_info WHERE established_date BETWEEN '2000-01-01' AND '2010-12-31';"}
+
+{"question": "查找住院超过7天的病人", "sql": "SELECT name, DATEDIFF(discharge_date, admission_date) AS stay_days FROM patient_info WHERE DATEDIFF(discharge_date, admission_date) > 7;"}
+{"question": "计算每位病人住院天数", "sql": "SELECT name, DATEDIFF(discharge_date, admission_date) AS stay_days FROM patient_info;"}
+{"question": "统计住院时间超过30天的病人数量", "sql": "SELECT COUNT(*) FROM patient_info WHERE DATEDIFF(discharge_date, admission_date) > 30;"}
+{"question": "查找设备距离上次维护超过90天的记录", "sql": "SELECT * FROM `testdb`.`equipment_info` WHERE DATEDIFF(CURDATE(), `last_maintenance`) > 90 AND `last_maintenance` IS NOT NULL LIMIT 1000;"}
+{"question": "统计出院天数超过10天的病人", "sql": "SELECT name FROM patient_info WHERE DATEDIFF(NOW(), discharge_date) > 10;"}

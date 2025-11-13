@@ -1,0 +1,118 @@
+{
+  "title": "结果预览",
+  "columns": [
+    "nurse_id",
+    "name",
+    "working_years"
+  ],
+  "data": [
+    {
+      "nurse_id": 14,
+      "name": "孙敏",
+      "working_years": 4
+    },
+    {
+      "nurse_id": 7,
+      "name": "赵倩",
+      "working_years": 4
+    },
+    {
+      "nurse_id": 11,
+      "name": "刘敏",
+      "working_years": 5
+    },
+    {
+      "nurse_id": 10,
+      "name": "周敏",
+      "working_years": 5
+    },
+    {
+      "nurse_id": 9,
+      "name": "陈婷",
+      "working_years": 5
+    },
+    {
+      "nurse_id": 19,
+      "name": "李阳",
+      "working_years": 6
+    },
+    {
+      "nurse_id": 5,
+      "name": "李芳",
+      "working_years": 6
+    },
+    {
+      "nurse_id": 2,
+      "name": "赵雪",
+      "working_years": 7
+    },
+    {
+      "nurse_id": 16,
+      "name": "刘芳",
+      "working_years": 7
+    },
+    {
+      "nurse_id": 8,
+      "name": "刘芳",
+      "working_years": 7
+    },
+    {
+      "nurse_id": 15,
+      "name": "李静",
+      "working_years": 8
+    },
+    {
+      "nurse_id": 3,
+      "name": "王倩",
+      "working_years": 9
+    },
+    {
+      "nurse_id": 18,
+      "name": "周伟",
+      "working_years": 9
+    },
+    {
+      "nurse_id": 12,
+      "name": "赵红",
+      "working_years": 10
+    },
+    {
+      "nurse_id": 1,
+      "name": "黄玲",
+      "working_years": 10
+    },
+    {
+      "nurse_id": 6,
+      "name": "王敏",
+      "working_years": 11
+    },
+    {
+      "nurse_id": 13,
+      "name": "陈燕",
+      "working_years": 11
+    },
+    {
+      "nurse_id": 4,
+      "name": "张敏",
+      "working_years": 12
+    },
+    {
+      "nurse_id": 17,
+      "name": "王倩",
+      "working_years": 13
+    },
+    {
+      "nurse_id": 20,
+      "name": "黄蕾",
+      "working_years": 15
+    }
+  ],
+  "metadata": {
+    "total_rows": 20,
+    "displayed_rows": 20,
+    "total_columns": 3,
+    "truncated": false,
+    "created_at": "20251111_181538",
+    "data_source": null
+  }
+}

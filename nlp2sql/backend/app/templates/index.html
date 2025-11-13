@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NL2SQL 演示 · 运行流程</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <h1>自然语言转 SQL · 运行流程可视化</h1>
+  </header>
+
+  <main>
+    <div id="loading" class="loading-overlay" style="display:none;">
+      <div class="spinner"></div>
+      <div class="tip">处理中，请稍候…</div>
+    </div>
+    <section class="panel">
+      <h2>1) 选择数据库与表</h2>
+      <div class="row">
+        <button id="btnLoadDBs">加载数据库</button>
+        <select id="selectDB"></select>
+        <button id="btnLoadTables">加载表</button>
+        <select id="selectTable"></select>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>2) 输入自然语言</h2>
+      <textarea id="txtQuery" rows="3" placeholder="例如：统计 users 表中每个月新增用户数"></textarea>
+      <div class="row">
+        <button id="btnGenSQL">生成 SQL</button>
+      </div>
+      <div class="row">
+        <label>生成的 / 可编辑 SQL：</label>
+      </div>
+      <textarea id="txtSQL" rows="4" placeholder="生成的 SQL 将出现在这里，可修改"></textarea>
+      <div class="row">
+        <button id="btnExec">执行 SQL</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>流程进度</h2>
+      <ol id="progress"></ol>
+    </section>
+
+    <section class="panel">
+      <h2>查询结果（最多 100 行）</h2>
+      <div id="resultTable" class="table-wrapper"></div>
+    </section>
+
+    <section class="panel">
+      <h2>AI 分析</h2>
+      <h3>数据报表</h3>
+      <pre id="analysisTable"></pre>
+      <h3>数据报告</h3>
+      <pre id="analysisReport"></pre>
+    </section>
+  </main>
+
+  <script src="/static/main.js"></script>
+</body>
+</html>

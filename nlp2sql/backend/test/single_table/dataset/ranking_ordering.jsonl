@@ -1,0 +1,29 @@
+{"question": "按工资从高到低排序医生名单", "sql": "SELECT name, salary FROM doctor_info ORDER BY salary DESC;"}
+{"question": "按医院等级升序、床位数降序排序医院", "sql": "SELECT name, level, total_beds FROM hospital_info ORDER BY level ASC, total_beds DESC;"}
+{"question": "按药品库存量从高到低、单价从低到高排序药品", "sql": "SELECT name, stock_quantity, unit_price FROM medicine_info ORDER BY stock_quantity DESC, unit_price ASC;"}
+{"question": "查询护士信息，先按班次升序，再按工资降序排序", "sql": "SELECT name, shift, salary FROM nurse_info ORDER BY shift ASC, salary DESC;"}
+{"question": "统计病人信息，先按年龄降序，再按入院日期升序排列", "sql": "SELECT name, age, admission_date FROM patient_info ORDER BY age DESC, admission_date ASC;"}
+
+{"question": "查询工资最高的前5名医生", "sql": "SELECT name, salary FROM doctor_info ORDER BY salary DESC LIMIT 5;"}
+{"question": "获取第6到第15名医生的工资信息", "sql": "SELECT name, salary FROM doctor_info ORDER BY salary DESC LIMIT 5,10;"}
+{"question": "查看入院时间最早的前3个病人", "sql": "SELECT name, admission_date FROM patient_info ORDER BY admission_date ASC LIMIT 3;"}
+{"question": "查询库存量最多的前10种药品", "sql": "SELECT name, stock_quantity FROM medicine_info ORDER BY stock_quantity DESC LIMIT 10;"}
+{"question": "查看最近成立的5家医院", "sql": "SELECT name, established_date FROM hospital_info ORDER BY established_date DESC LIMIT 5;"}
+
+{"question": "为所有医生按工资排名", "sql": "SELECT name, salary, RANK() OVER (ORDER BY salary DESC) AS salary_rank FROM doctor_info;"}
+{"question": "为每个职称的医生按工资排名", "sql": "SELECT title, name, salary, RANK() OVER (PARTITION BY title ORDER BY salary DESC) AS rank_in_title FROM doctor_info;"}
+{"question": "按照护士的工龄进行排序", "sql": "SELECT `nurse_id`, `name`, TIMESTAMPDIFF(YEAR, `hire_date`, IFNULL(`created_at`, CURDATE())) AS `working_years` FROM `testdb`.`nurse_info` WHERE `hire_date` IS NOT NULL ORDER BY `working_years` ASC LIMIT 1000;"}
+{"question": "计算每个药品类别中价格最高的药品排名", "sql": "SELECT category, name, unit_price, RANK() OVER (PARTITION BY category ORDER BY unit_price DESC) AS rank_in_category FROM medicine_info;"}
+{"question": "统计各医院医生按工资的行号", "sql": "SELECT hospital_id, name, salary, ROW_NUMBER() OVER (PARTITION BY hospital_id ORDER BY salary DESC) AS row_id FROM doctor_info;"}
+
+{"question": "为医生按工资排名，并保持连续名次", "sql": "SELECT name, salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS salary_rank FROM doctor_info;"}
+{"question": "为护士按工资排名（跳过并列名次）", "sql": "SELECT name, salary, RANK() OVER (ORDER BY salary DESC) AS salary_rank FROM nurse_info;"}
+{"question": "计算药品按价格的连续排名", "sql": "SELECT name, unit_price, DENSE_RANK() OVER (ORDER BY unit_price DESC) AS price_rank FROM medicine_info;"}
+{"question": "统计医生在职称内工资名次（允许跳名次）", "sql": "SELECT title, name, salary, RANK() OVER (PARTITION BY title ORDER BY salary DESC) AS title_rank FROM doctor_info;"}
+{"question": "统计病人按年龄排名，保持名次连续", "sql": "SELECT name, age, DENSE_RANK() OVER (ORDER BY age DESC) AS age_rank FROM patient_info;"}
+
+{"question": "查询工资最高的医生姓名", "sql": "SELECT name FROM doctor_info ORDER BY salary DESC LIMIT 1;"}
+{"question": "获取每个医院中工资最高的医生（并整体按工资排序）", "sql": "SELECT hospital_id, name, salary FROM (SELECT hospital_id, name, salary, RANK() OVER (PARTITION BY hospital_id ORDER BY salary DESC) AS rnk FROM doctor_info) AS t WHERE rnk = 1 ORDER BY salary DESC;"}
+{"question": "统计平均薪资最高的医院并按薪资降序排列", "sql": "SELECT hospital_id, ROUND(AVG(salary),2) AS avg_salary FROM doctor_info GROUP BY hospital_id ORDER BY avg_salary DESC;"}
+{"question": "查找平均药价最高的类别（外层排序生效）", "sql": "SELECT category, ROUND(AVG(unit_price),2) AS avg_price FROM medicine_info GROUP BY category ORDER BY avg_price DESC LIMIT 1;"}
+{"question": "查找病人年龄最大的前10名", "sql": "SELECT name, age FROM patient_info ORDER BY age DESC LIMIT 10;"}

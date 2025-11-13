@@ -1,0 +1,29 @@
+{"question": "各职称医生占医生总人数的比例", "sql": "SELECT title, ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM doctor_info), 2) AS ratio_percent FROM doctor_info GROUP BY title;"}
+{"question": "各医院等级占总医院数量比例", "sql": "SELECT level, ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM hospital_info), 2) AS ratio_percent FROM hospital_info GROUP BY level;"}
+{"question": "不同药品类别的数量占比", "sql": "SELECT category, ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM medicine_info), 2) AS percent FROM medicine_info GROUP BY category;"}
+{"question": "各班次护士人数占总护士人数比例", "sql": "SELECT shift, ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM nurse_info), 2) AS percent FROM nurse_info GROUP BY shift;"}
+{"question": "各医院的病人数占所有病人的比例", "sql": "SELECT hospital_id, ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM patient_info), 2) AS ratio_percent FROM patient_info GROUP BY hospital_id;"}
+
+{"question": "统计每个医院医生数量占总医生人数比例", "sql": "SELECT hospital_id, ROUND(COUNT(*) * 100.0 / NULLIF((SELECT COUNT(*) FROM doctor_info),0), 2) AS doctor_ratio FROM doctor_info GROUP BY hospital_id;"}
+{"question": "统计每个药品类别库存量占总库存比例", "sql": "SELECT category, ROUND(SUM(stock_quantity) * 100.0 / NULLIF((SELECT SUM(stock_quantity) FROM medicine_info),0), 2) AS stock_ratio FROM medicine_info GROUP BY category;"}
+{"question": "统计各职称医生工资总额占全部医生工资的比例", "sql": "SELECT title, ROUND(SUM(salary) * 100.0 / NULLIF((SELECT SUM(salary) FROM doctor_info),0), 2) AS ratio FROM doctor_info GROUP BY title;"}
+{"question": "各医院床位数占总床位比例", "sql": "SELECT hospital_id, ROUND(SUM(total_beds) * 100.0 / NULLIF((SELECT SUM(total_beds) FROM hospital_info),0), 2) AS bed_ratio FROM hospital_info GROUP BY hospital_id;"}
+{"question": "各药品类别金额占所有药品总金额比例", "sql": "SELECT category, ROUND(SUM(unit_price * stock_quantity) * 100.0 / NULLIF((SELECT SUM(unit_price * stock_quantity) FROM medicine_info),0), 2) AS ratio FROM medicine_info GROUP BY category;"}
+
+{"question": "统计每个医院等级的医院数量占比（保留两位小数）", "sql": "SELECT level, ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM hospital_info), 2) AS percent FROM hospital_info GROUP BY level;"}
+{"question": "计算各职称医生平均工资占全体平均工资的比例", "sql": "SELECT title, ROUND(AVG(salary) * 100.0 / (SELECT AVG(salary) FROM doctor_info), 2) AS ratio_percent FROM doctor_info GROUP BY title;"}
+{"question": "各药品类别平均单价占整体平均单价比例", "sql": "SELECT category, ROUND(AVG(unit_price) * 100.0 / (SELECT AVG(unit_price) FROM medicine_info), 2) AS ratio_percent FROM medicine_info GROUP BY category;"}
+{"question": "护士各班次人数比例（保留三位小数）", "sql": "SELECT shift, ROUND(COUNT(*) * 1.0 / (SELECT COUNT(*) FROM nurse_info), 3) AS ratio FROM nurse_info GROUP BY shift;"}
+{"question": "各医院病人数占比，保留两位小数", "sql": "SELECT hospital_id, ROUND(COUNT(*) * 1.0 / (SELECT COUNT(*) FROM patient_info), 2) AS ratio FROM patient_info GROUP BY hospital_id;"}
+
+{"question": "统计三甲医院医生人数占全部医生人数比例", "sql": "SELECT ROUND((SELECT COUNT(*) FROM doctor_info d JOIN hospital_info h ON d.hospital_id = h.hospital_id WHERE h.level = '三甲') * 100.0 / (SELECT COUNT(*) FROM doctor_info), 2) AS percent;"}
+{"question": "统计主任医师人数占医生总人数比例", "sql": "SELECT ROUND((SELECT COUNT(*) FROM doctor_info WHERE title = '主任医师') * 100.0 / (SELECT COUNT(*) FROM doctor_info), 2) AS ratio;"}
+{"question": "统计库存量超过100的药品占所有药品数量比例", "sql": "SELECT ROUND((SELECT COUNT(*) FROM medicine_info WHERE stock_quantity > 100) * 100.0 / (SELECT COUNT(*) FROM medicine_info), 2) AS ratio;"}
+{"question": "查询工资高于平均工资的医生占总医生人数比例", "sql": "SELECT ROUND((SELECT COUNT(*) FROM doctor_info WHERE salary > (SELECT AVG(salary) FROM doctor_info)) * 100.0 / (SELECT COUNT(*) FROM doctor_info), 2) AS ratio;"}
+{"question": "统计病人住院超过10天的比例", "sql": "SELECT ROUND((SELECT COUNT(*) FROM patient_info WHERE DATEDIFF(discharge_date, admission_date) > 10) * 100.0 / (SELECT COUNT(*) FROM patient_info), 2) AS ratio;"}
+
+{"question": "各职称医生人数的占比是多少？", "sql": "SELECT title, ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM doctor_info), 2) AS percent FROM doctor_info GROUP BY title;"}
+{"question": "三甲医院所占比例", "sql": "SELECT ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM hospital_info), 2) AS percent FROM hospital_info WHERE level='三甲';"}
+{"question": "每个药品类别的销售份额", "sql": "SELECT category, ROUND(SUM(unit_price * stock_quantity) * 100.0 / (SELECT SUM(unit_price * stock_quantity) FROM medicine_info), 2) AS share_percent FROM medicine_info GROUP BY category;"}
+{"question": "白班护士人数的比重", "sql": "SELECT ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM nurse_info), 2) AS percent FROM nurse_info WHERE shift='白班';"}
+{"question": "各医院等级在所有医院中的占比", "sql": "SELECT level, ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM hospital_info), 2) AS percent FROM hospital_info GROUP BY level;"}

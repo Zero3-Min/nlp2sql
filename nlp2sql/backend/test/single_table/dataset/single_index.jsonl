@@ -1,0 +1,35 @@
+{"question": "系统里一共有多少位医生？", "sql": "SELECT COUNT(*) FROM doctor_info;"}
+{"question": "全部医院的数量是多少？", "sql": "SELECT COUNT(*) FROM hospital_info;"}
+{"question": "登记的病人条数是多少？", "sql": "SELECT COUNT(*) FROM patient_info;"}
+{"question": "医生表里共有多少个记录？", "sql": "SELECT COUNT(*) FROM doctor_info;"}
+{"question": "当前系统中护士总人数是多少？", "sql": "SELECT COUNT(*) FROM nurse_info;"}
+
+{"question": "当前仍在住院的病人有多少？", "sql": "SELECT COUNT(*) FROM patient_info WHERE discharge_date IS NULL;"}
+{"question": "有多少病人已经出院？", "sql": "SELECT COUNT(*) FROM patient_info WHERE discharge_date IS NOT NULL;"}
+{"question": "有多少医生的手机号未填写？", "sql": "SELECT COUNT(*) FROM doctor_info WHERE phone IS NULL;"}
+{"question": "目前病历记录总条数是多少？", "sql": "SELECT COUNT(*) FROM medical_record;"}
+{"question": "共有多少设备未记录维护时间？", "sql": "SELECT COUNT(*) FROM equipment_info WHERE last_maintenance IS NULL;"}
+
+{"question": "每个科室的医生数量是多少？", "sql": "SELECT dept_id, COUNT(*) AS num_doctors FROM doctor_info GROUP BY dept_id;"}
+{"question": "哪些医院拥有超过10名医生？", "sql": "SELECT hospital_id, COUNT(*) AS num FROM doctor_info GROUP BY hospital_id HAVING num > 10;"}
+{"question": "每个医院等级对应多少家医院？", "sql": "SELECT level, COUNT(*) AS cnt FROM hospital_info GROUP BY level;"}
+{"question": "哪些药品类别包含3种以上药品？", "sql": "SELECT category, COUNT(*) AS num FROM medicine_info GROUP BY category HAVING num > 3;"}
+{"question": "每个职称下医生平均工资大于2万的有哪些？", "sql": "SELECT title, AVG(salary) AS avg_sal FROM doctor_info GROUP BY title HAVING avg_sal > 20000;"}
+
+{"question": "医院共有多少护士？", "sql": "SELECT COUNT(*) FROM nurse_info;"}
+{"question": "各科室医生人数是多少？", "sql": "SELECT dept_id, COUNT(*) FROM doctor_info GROUP BY dept_id;"}
+{"question": "当前系统有多少药品？", "sql": "SELECT COUNT(*) FROM medicine_info;"}
+{"question": "统计每个医院登记的病人数量", "sql": "SELECT hospital_id, COUNT(*) FROM patient_info GROUP BY hospital_id;"}
+{"question": "系统一共登记了多少个病历？", "sql": "SELECT COUNT(*) FROM medical_record;"}
+
+{"question": "医生的平均工资是多少？", "sql": "SELECT ROUND(AVG(CAST(salary AS DECIMAL(10,2))),2) FROM doctor_info;"}
+{"question": "各医院平均床位数是多少？", "sql": "SELECT hospital_id, ROUND(AVG(CAST(total_beds AS DECIMAL(10,2))),2) FROM hospital_info GROUP BY hospital_id;"}
+{"question": "各职称医生的平均工资保留两位小数", "sql": "SELECT title, ROUND(AVG(CAST(salary AS DECIMAL(10,2))),2) AS avg_salary FROM doctor_info GROUP BY title;"}
+{"question": "病人的平均年龄是多少？", "sql": "SELECT ROUND(AVG(age),1) FROM patient_info;"}
+{"question": "各药品类别的平均单价是多少？", "sql": "SELECT category, ROUND(AVG(CAST(unit_price AS DECIMAL(10,2))),2) AS avg_price FROM medicine_info GROUP BY category;"}
+
+{"question": "每个护士的工龄", "sql": "SELECT `nurse_id`, `name`, TIMESTAMPDIFF(YEAR, `hire_date`, CURDATE()) AS `seniority` FROM `testdb`.`nurse_info` LIMIT 1000;"}
+{"question": "病人的电话号码的记录情况", "sql": "SELECT patient_id, name, phone, CASE WHEN phone IS NULL OR phone = '' THEN '未记录' ELSE '已记录' END AS phone_status FROM testdb.patient_info LIMIT 1000;"}
+{"question": "每个病人的住院天数", "sql": "SELECT `patient_id`, `name`, DATEDIFF(IFNULL(`discharge_date`, CURDATE()), `admission_date`) AS `hospital_days` FROM `testdb`.`patient_info` LIMIT 1000;"}
+{"question": "每台设备的使用年限", "sql": "SELECT `equipment_id`, `name`, TIMESTAMPDIFF(YEAR, `purchase_date`, CURDATE()) AS `usage_years` FROM `testdb`.`equipment_info` LIMIT 1000;"}
+{"question": "每个药品的存储天数", "sql": "SELECT `medicine_id`, DATEDIFF(CURDATE(), `created_at`) AS `storage_days` FROM `testdb`.`medicine_info` GROUP BY `medicine_id`, `created_at` LIMIT 1000;"}

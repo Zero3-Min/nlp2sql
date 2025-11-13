@@ -1,0 +1,29 @@
+{"question": "查询仍在住院的病人姓名", "sql": "SELECT name FROM patient_info WHERE discharge_date IS NULL;"}
+{"question": "查找已出院病人的列表", "sql": "SELECT name FROM patient_info WHERE discharge_date IS NOT NULL;"}
+{"question": "哪些设备还没有维护日期？", "sql": "SELECT `equipment_id`, `name`, `model`, `manufacturer`, `purchase_date`, `status` FROM `testdb`.`equipment_info` WHERE `last_maintenance` IS NULL;"}
+{"question": "医生中手机号缺失的有哪些？", "sql": "SELECT name FROM doctor_info WHERE phone IS NULL;"}
+{"question": "哪些病人的出院时间未知？", "sql": "SELECT name FROM patient_info WHERE discharge_date IS NULL;"}
+
+{"question": "查询工资高于20000或职称为主任医师且属于1号医院的医生", "sql": "SELECT name FROM doctor_info WHERE (salary > 20000 OR title = '主任医师') AND hospital_id = 1;"}
+{"question": "查找药品库存小于100或单价低于5元且类别为抗生素", "sql": "SELECT name FROM medicine_info WHERE (stock_quantity < 100 OR unit_price < 5) AND category = '抗生素';"}
+{"question": "筛选出年龄大于60岁或性别为女并且仍在住院的病人", "sql": "SELECT name FROM patient_info WHERE (age > 60 OR gender = '女') AND discharge_date IS NULL;"}
+{"question": "查询医生职称为副主任医师或主任医师且工资高于18000", "sql": "SELECT name FROM doctor_info WHERE (title IN ('主任医师','副主任医师')) AND salary > 18000;"}
+{"question": "查找医院等级为三甲或二甲且成立时间早于2010年", "sql": "SELECT name FROM hospital_info WHERE (level IN ('三甲','二甲')) AND established_date < '2010-01-01';"}
+
+{"question": "查找姓名中包含‘伟’字的医生", "sql": "SELECT name FROM doctor_info WHERE name LIKE '%伟%';"}
+{"question": "查询药品名称以‘阿莫’开头的药品", "sql": "SELECT name FROM medicine_info WHERE name LIKE '阿莫%';"}
+{"question": "查找医院名称中带有‘市人民’的医院", "sql": "SELECT name FROM hospital_info WHERE name LIKE '%市人民%';"}
+{"question": "查询职称中包含‘医师’的医生", "sql": "SELECT name, title FROM doctor_info WHERE title LIKE '%医师%';"}
+{"question": "查找药品类别包含‘消炎’的药品", "sql": "SELECT name FROM medicine_info WHERE category LIKE '%消炎%';"}
+
+{"question": "查询所有性别为女的护士", "sql": "SELECT name FROM nurse_info WHERE gender = '女';"}
+{"question": "查找所有男性医生的姓名", "sql": "SELECT name FROM doctor_info WHERE gender = '男';"}
+{"question": "统计性别为男的病人", "sql": "SELECT COUNT(*) FROM patient_info WHERE gender = '男';"}
+{"question": "查询所有白班护士的姓名", "sql": "SELECT name FROM nurse_info WHERE shift = '白班';"}
+{"question": "查找药品类别为‘抗生素’的药品", "sql": "SELECT name FROM medicine_info WHERE category = '抗生素';"}
+
+{"question": "查询2025年1月入院的病人", "sql": "SELECT name FROM patient_info WHERE admission_date BETWEEN '2025-01-01' AND '2025-01-31';"}
+{"question": "查找2024年成立的医院", "sql": "SELECT name FROM hospital_info WHERE YEAR(established_date) = 2024;"}
+{"question": "查询2025年3月后出院的病人", "sql": "SELECT name FROM patient_info WHERE discharge_date >= '2025-03-01';"}
+{"question": "统计2025年上半年入院的病人数量", "sql": "SELECT COUNT(*) FROM patient_info WHERE admission_date BETWEEN '2025-01-01' AND '2025-06-30';"}
+{"question": "查找2023年12月31日前建立的医院", "sql": "SELECT name FROM hospital_info WHERE established_date < '2024-01-01';"}

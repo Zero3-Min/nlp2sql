@@ -1,0 +1,31 @@
+{
+  "type": "bar",
+  "x": "TotalSpent",
+  "y": "CustomerId",
+  "data": [
+    {
+      "TotalSpent": "45.62",
+      "CustomerId": 91
+    },
+    {
+      "TotalSpent": "43.62",
+      "CustomerId": 89
+    },
+    {
+      "TotalSpent": "46.62",
+      "CustomerId": 57
+    },
+    {
+      "TotalSpent": "42.62",
+      "CustomerId": 32
+    },
+    {
+      "TotalSpent": "47.62",
+      "CustomerId": 26
+    },
+    {
+      "TotalSpent": "49.62",
+      "CustomerId": 6
+    }
+  ]
+}

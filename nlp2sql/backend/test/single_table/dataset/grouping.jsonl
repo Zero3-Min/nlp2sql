@@ -1,0 +1,29 @@
+{"question": "统计每个科室的医生人数", "sql": "SELECT dept_id, COUNT(*) AS doctor_count FROM doctor_info GROUP BY dept_id;"}
+{"question": "统计每个医院的科室数量", "sql": "SELECT hospital_id, COUNT(*) AS dept_num FROM department_info GROUP BY hospital_id;"}
+{"question": "计算每个药品类别的药品数量", "sql": "SELECT category, COUNT(*) AS num FROM medicine_info GROUP BY category;"}
+{"question": "查看不同职称的医生平均工资", "sql": "SELECT title, ROUND(AVG(salary),2) AS avg_salary FROM doctor_info GROUP BY title;"}
+{"question": "统计每个医院等级下的医院数量", "sql": "SELECT level, COUNT(*) AS hospital_count FROM hospital_info GROUP BY level;"}
+
+{"question": "哪些医院的医生人数超过10人？", "sql": "SELECT hospital_id, COUNT(*) AS num FROM doctor_info GROUP BY hospital_id HAVING num > 10;"}
+{"question": "每个科室的医生人数超过5人的有哪些？", "sql": "SELECT dept_id, COUNT(*) AS num FROM doctor_info GROUP BY dept_id HAVING num > 5;"}
+{"question": "统计药品类别中数量超过3的类别", "sql": "SELECT category, COUNT(*) AS num FROM medicine_info GROUP BY category HAVING num > 3;"}
+{"question": "查看平均工资超过2万元的职称", "sql": "SELECT title, AVG(salary) AS avg_salary FROM doctor_info GROUP BY title HAVING avg_salary > 20000;"}
+{"question": "统计拥有超过200张床位的医院等级", "sql": "SELECT level, SUM(total_beds) AS bed_sum FROM hospital_info GROUP BY level HAVING bed_sum > 200;"}
+
+{"question": "统计每个科室的医生人数，包括未分配科室的医生", "sql": "SELECT IFNULL(dept_id, '未分配') AS dept_id, COUNT(*) AS num FROM doctor_info GROUP BY dept_id;"}
+{"question": "统计每个药品类别的库存数量，包括类别为空的药品", "sql": "SELECT IFNULL(category, '未知类别') AS category, SUM(stock_quantity) AS total_stock FROM medicine_info GROUP BY category;"}
+{"question": "统计每个医院的病人数量，包含未登记医院的病人", "sql": "SELECT IFNULL(hospital_id, '未知') AS hospital_id, COUNT(*) FROM patient_info GROUP BY hospital_id;"}
+{"question": "统计护士按班次分组的人数（含空班次）", "sql": "SELECT IFNULL(shift, '未分配') AS shift, COUNT(*) FROM nurse_info GROUP BY shift;"}
+{"question": "统计设备按维护状态分组的数量", "sql": "SELECT `status`, COUNT(*) AS `count` FROM `testdb`.`equipment_info` GROUP BY `status`;"}
+
+{"question": "计算每个医院医生的平均工资和总人数", "sql": "SELECT hospital_id, COUNT(*) AS doctor_count, ROUND(AVG(salary),2) AS avg_salary FROM doctor_info GROUP BY hospital_id;"}
+{"question": "各医院中平均工资最高的职称", "sql": "SELECT hospital_id, title, ROUND(AVG(salary),2) AS avg_salary FROM doctor_info GROUP BY hospital_id, title HAVING AVG(salary) = ( SELECT MAX(avg_s) FROM (SELECT hospital_id AS hid, AVG(salary) AS avg_s FROM doctor_info GROUP BY hospital_id, title) AS sub WHERE sub.hid = doctor_info.hospital_id);" }
+{"question": "统计每个药品类别的平均库存量", "sql": "SELECT category, ROUND(AVG(stock_quantity),1) AS avg_stock FROM medicine_info GROUP BY category;"}
+{"question": "按医院统计医生人数后，计算这些医院的平均医生人数", "sql": "SELECT ROUND(AVG(doctor_count),1) FROM (SELECT hospital_id, COUNT(*) AS doctor_count FROM doctor_info GROUP BY hospital_id) AS t;"}
+{"question": "统计每个班次护士平均工资，再求所有班次的最大平均工资", "sql": "SELECT MAX(avg_salary) FROM (SELECT shift, ROUND(AVG(salary),2) AS avg_salary FROM nurse_info GROUP BY shift) AS tmp;"}
+
+{"question": "统计每个医院各科室的医生数量", "sql": "SELECT hospital_id, dept_id, COUNT(*) AS doctor_count FROM doctor_info GROUP BY hospital_id, dept_id;"}
+{"question": "统计每个医院的医生总人数", "sql": "SELECT hospital_id, COUNT(*) AS doctor_count FROM doctor_info GROUP BY hospital_id;"}
+{"question": "统计各医院等级的平均床位数", "sql": "SELECT level, ROUND(AVG(total_beds),1) AS avg_beds FROM hospital_info GROUP BY level;"}
+{"question": "统计每个医院等级中医院数量", "sql": "SELECT level, COUNT(*) AS hospital_count FROM hospital_info GROUP BY level;"}
+{"question": "统计各医院中不同职称医生的平均工资", "sql": "SELECT hospital_id, title, ROUND(AVG(salary),2) AS avg_salary FROM doctor_info GROUP BY hospital_id, title;"}
