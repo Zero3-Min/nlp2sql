@@ -383,8 +383,6 @@ class SqlJudgeAgent(BaseAgent):
             "need_regenerate": bool(obj.get("need_regenerate", not bool(obj.get("valid", False))))
         }
     
-<<<<<<< HEAD
-=======
 
     def _aggregate_errors(self, *items: Tuple[Dict[str, Any], str]) -> List[str]:
         errors: List[str] = []
@@ -413,7 +411,7 @@ class SqlJudgeAgent(BaseAgent):
             schema = kwargs.get("schema")
         if db is None and "db" in kwargs:
             db = kwargs.get("db")
-    ) -> Dict[str, Any]:
+
         try:
             syntax_info = self._check_syntax(sql_generated, schema)
             semantic_info = self._semantic_alignment(user_query, sql_generated, schema)
@@ -482,8 +480,6 @@ class SqlJudgeAgent(BaseAgent):
                 "details": {},
             }
 
->>>>>>> origin/main
->>>>>>> origin/main
     # 简化版文本流读取（不做分号裁剪）
     def _get_last_text(self, assistant, messages, stream: bool = True) -> str:
         text = ""
