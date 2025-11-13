@@ -375,6 +375,10 @@ class SqlJudgeAgent(BaseAgent):
             pass
         return {}
 
+<<<<<<< HEAD
+
+    
+
     def _aggregate_errors(self, *items: Tuple[Dict[str, Any], str]) -> List[str]:
         errors: List[str] = []
         for info, default_msg in items:
@@ -471,6 +475,7 @@ class SqlJudgeAgent(BaseAgent):
                 "details": {},
             }
 
+>>>>>>> origin/main
     # 简化版文本流读取（不做分号裁剪）
     def _get_last_text(self, assistant, messages, stream: bool = True) -> str:
         text = ""
@@ -510,3 +515,40 @@ class SqlJudgeAgent(BaseAgent):
             return result
         except Exception:
             return ""
+
+    def run(self, user_query: str, sql_generated: str) -> Dict[str, Any]:
+        if not self.llm_assistant:
+            # 无 LLM 时，保守返回“需重试”
+            return {
+                "valid": False,
+                "reason": "判别模型未配置",
+                "fix_suggestion": "请检查 SQL 字段/分组/排序是否与需求一致，并添加 LIMIT 以避免全表扫描",
+                "need_regenerate": True,
+            }
+        try:
+            system_prompt = self._build_system_prompt()
+            user_prompt = self._build_user_prompt(user_query, sql_generated)
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ]
+            text = self._get_last_text(self.llm_assistant, messages)
+            obj = self._parse_json(text)
+            if not obj:
+                return {
+                    "valid": False,
+                    "reason": "判别模型未返回有效 JSON",
+                    "fix_suggestion": "请检查 SQL 的 GROUP BY/HAVING/WHERE、字段存在性与语义一致性",
+                    "need_regenerate": True,
+                }
+            return self._normalize_result(obj)
+        except Exception as e:
+            self._logger.exception("SqlJudgeAgent 失败")
+            return {
+                "valid": False,
+                "reason": f"判别异常: {e}",
+                "fix_suggestion": "请缩小时间范围或明确分组/排序口径后重试",
+                "need_regenerate": True,
+            }
+
+    
