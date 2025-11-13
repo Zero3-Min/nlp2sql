@@ -402,6 +402,7 @@ class SqlJudgeAgent(BaseAgent):
             schema = kwargs.get("schema")
         if db is None and "db" in kwargs:
             db = kwargs.get("db")
+    ) -> Dict[str, Any]:
         try:
             syntax_info = self._check_syntax(sql_generated, schema)
             semantic_info = self._semantic_alignment(user_query, sql_generated, schema)
