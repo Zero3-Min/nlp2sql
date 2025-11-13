@@ -375,100 +375,14 @@ class SqlJudgeAgent(BaseAgent):
             pass
         return {}
 
-<<<<<<< HEAD
-
+    def _normalize_result(self, obj: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "valid": bool(obj.get("valid", False)),
+            "reason": str(obj.get("reason", "")),
+            "fix_suggestion": str(obj.get("fix_suggestion", "")),
+            "need_regenerate": bool(obj.get("need_regenerate", not bool(obj.get("valid", False))))
+        }
     
-
-    def _aggregate_errors(self, *items: Tuple[Dict[str, Any], str]) -> List[str]:
-        errors: List[str] = []
-        for info, default_msg in items:
-            if not info:
-                continue
-            if info.get("valid"):
-                continue
-            errs = info.get("errors")
-            if isinstance(errs, list) and errs:
-                errors.extend(str(e) for e in errs if e)
-            elif default_msg:
-                errors.append(default_msg)
-        return [e for e in errors if e]
-
-    def run(
-        self,
-        user_query: str,
-        sql_generated: str,
-        schema: Optional[Dict[str, Any]] = None,
-        db: Any = None,
-    ) -> Dict[str, Any]:
-        try:
-            syntax_info = self._check_syntax(sql_generated, schema)
-            semantic_info = self._semantic_alignment(user_query, sql_generated, schema)
-            explanation = semantic_info.get("sql_nl_explanation", "")
-            sql2nl_info = {
-                "valid": bool(explanation),
-                "explanation": explanation,
-                "errors": [] if explanation else ["未生成 SQL 自然语言解释"],
-            }
-            embedding_info = self._embedding_similarity(user_query, explanation or sql_generated)
-            execution_info = self._execution_check(sql_generated, db)
-
-            combined_errors = self._aggregate_errors(
-                (syntax_info, "语法校验失败"),
-                (semantic_info, "语义判定失败"),
-                (sql2nl_info, "SQL→自然语言解释缺失"),
-                (embedding_info, "语义相似度不足"),
-                (execution_info, "SQL 无法执行"),
-            )
-
-            valid = (
-                syntax_info.get("valid")
-                and semantic_info.get("valid")
-                and sql2nl_info.get("valid")
-                and embedding_info.get("valid")
-                and execution_info.get("valid")
-            )
-
-            reason = combined_errors[0] if combined_errors else "SQL 校验通过"
-            fix_candidates: List[str] = []
-            for item in (semantic_info, syntax_info, execution_info):
-                fix = item.get("fix_suggestion") if isinstance(item, dict) else None
-                if fix:
-                    fix_candidates.append(str(fix))
-            fix_suggestion = next((f for f in fix_candidates if f), "")
-            if not fix_suggestion and combined_errors:
-                fix_suggestion = combined_errors[0]
-
-            result = {
-                "valid": bool(valid),
-                "errors": combined_errors,
-                "reason": reason,
-                "fix_suggestion": fix_suggestion,
-                "sql_nl_explanation": explanation,
-                "semantic_similarity": float(embedding_info.get("score", 0.0)),
-                "need_regenerate": not bool(valid),
-                "details": {
-                    "syntax": syntax_info,
-                    "semantic": semantic_info,
-                    "sql2nl": sql2nl_info,
-                    "embedding": embedding_info,
-                    "execution": execution_info,
-                },
-            }
-            return result
-        except Exception as exc:  # pragma: no cover - 整体容错
-            self._logger.exception("SqlJudgeAgent 失败: %s", exc)
-            return {
-                "valid": False,
-                "errors": [f"判别异常: {exc}"],
-                "reason": f"判别异常: {exc}",
-                "fix_suggestion": "请检查 SQL 语法、字段及分组条件后重试",
-                "sql_nl_explanation": "",
-                "semantic_similarity": 0.0,
-                "need_regenerate": True,
-                "details": {},
-            }
-
->>>>>>> origin/main
     # 简化版文本流读取（不做分号裁剪）
     def _get_last_text(self, assistant, messages, stream: bool = True) -> str:
         text = ""
