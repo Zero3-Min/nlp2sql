@@ -395,6 +395,13 @@ class SqlJudgeAgent(BaseAgent):
         sql_generated: str,
         schema: Optional[Dict[str, Any]] = None,
         db: Any = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        # 兼容旧调用：某些地方可能通过关键字参数传入 schema/db
+        if schema is None and "schema" in kwargs:
+            schema = kwargs.get("schema")
+        if db is None and "db" in kwargs:
+            db = kwargs.get("db")
     ) -> Dict[str, Any]:
         try:
             syntax_info = self._check_syntax(sql_generated, schema)
