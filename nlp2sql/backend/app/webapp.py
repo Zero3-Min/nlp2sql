@@ -21,7 +21,7 @@ import sys
 import json
 from decimal import Decimal
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import re
 
 import pandas as pd
@@ -144,6 +144,36 @@ ANALYSIS_SINGLETON = None
 SQL_JUDGE_SINGLETON = None
 
 
+def fetch_table_schema(db, database: str, table: str) -> Dict[str, Any]:
+    schema: Dict[str, Any] = {"database": database, "table": table, "columns": []}
+    sql = f"SHOW FULL COLUMNS FROM `{database}`.`{table}`;"
+    try:
+        rows = db.execute_query(sql)
+    except Exception:
+        rows = None
+    if not rows:
+        return schema
+    columns: List[Dict[str, Any]] = []
+    for row in rows:
+        name = row.get("Field") or row.get("COLUMN_NAME") or row.get("field")
+        if not name:
+            continue
+        columns.append(
+            {
+                "name": name,
+                "type": row.get("Type")
+                or row.get("COLUMN_TYPE")
+                or row.get("type")
+                or "",
+                "nullable": (row.get("Null") or row.get("IS_NULLABLE") or "").upper()
+                in ("YES", "TRUE", "Y"),
+                "comment": row.get("Comment") or row.get("COLUMN_COMMENT") or "",
+            }
+        )
+    schema["columns"] = columns
+    return schema
+
+
 def get_llm():
     global LLM_SINGLETON
     if LLM_SINGLETON is None:
@@ -180,14 +210,22 @@ def generate_sql_with_validation(user_query: str, db_name: str, table_name: str,
     nlp_agent = get_text2sql_agent()
     judge_agent = get_sql_judge_agent()
     iterations = []
-    fix = None
-    sql = nlp_agent.run(user_nl=user_query, database=db_name, table=table_name, conn=db, fix_suggestion=fix)
+    fix: Optional[str] = None
+    sql = nlp_agent.run(
+        user_nl=user_query,
+        database=db_name,
+        table=table_name,
+        conn=db,
+        fix_suggestion=fix,
+    )
     last_judge = None
+    schema = fetch_table_schema(db, db_name, table_name)
     for _ in range(3):
-        jr = judge_agent.run(user_query, sql)
+        jr = judge_agent.run(user_query, sql, schema=schema, db=db)
         # 记录每轮判别及对应SQL
         it = dict(jr)
         it["sql"] = sql
+        it["iteration"] = len(iterations) + 1
         iterations.append(it)
         last_judge = jr
         if jr.get("valid"):
@@ -243,7 +281,22 @@ def api_chat():
             fix_suggestion = it.get("fix_suggestion", "")
             it_sql = it.get("sql", "")
             status = "通过" if valid else "失败"
-            content = f"[判别{status}]\nSQL: {it_sql}\n原因: {reason}\n修复建议: {fix_suggestion}"
+            explanation = it.get("sql_nl_explanation", "")
+            similarity = it.get("semantic_similarity")
+            content_parts = [
+                f"[判别{status}]",
+                f"SQL: {it_sql}",
+                f"原因: {reason}",
+                f"修复建议: {fix_suggestion}",
+            ]
+            if explanation:
+                content_parts.append(f"SQL解释: {explanation}")
+            if similarity is not None:
+                try:
+                    content_parts.append(f"语义相似度: {float(similarity):.3f}")
+                except Exception:
+                    pass
+            content = "\n".join([part for part in content_parts if part])
             msgs.append({"type": "judge", "valid": valid, "content": content})
         if sql:
             msgs.append({"type": "sql", "content": sql})
