@@ -191,6 +191,8 @@ def generate_sql_with_validation(user_query: str, db_name: str, table_name: str,
         conn=db,
         fix_suggestion=fix,
     )
+    plan_snapshot = nlp_agent.last_plan or [user_query]
+    sql_sequence_snapshot = nlp_agent.last_sql_sequence or ([sql] if sql else [])
     last_judge = None
     for _ in range(5):
         jr = judge_agent.run(user_query, sql, table_name=table_name, db_name=db_name, db=db)
@@ -200,12 +202,33 @@ def generate_sql_with_validation(user_query: str, db_name: str, table_name: str,
         it["iteration"] = len(iterations) + 1
         iterations.append(it)
         last_judge = jr
+        plan_snapshot = nlp_agent.last_plan or plan_snapshot
+        sql_sequence_snapshot = nlp_agent.last_sql_sequence or sql_sequence_snapshot
         if jr.get("valid"):
-            return {"ok": True, "sql": sql, "iterations": iterations, "last_judge": last_judge}
+            return {
+                "ok": True,
+                "sql": sql,
+                "iterations": iterations,
+                "last_judge": last_judge,
+                "plan": plan_snapshot,
+                "sql_sequence": sql_sequence_snapshot,
+            }
         fix = jr.get("fix_suggestion") or ""
-        sql = nlp_agent.run(user_nl=user_query, database=db_name, table=table_name, conn=db, fix_suggestion=fix)
-    return {"ok": False, "sql": sql, "iterations": iterations, "last_judge": last_judge}
-
+        sql = nlp_agent.run(
+            user_nl=user_query,
+            database=db_name,
+            table=table_name,
+            conn=db,
+            fix_suggestion=fix,
+        )
+    return {
+        "ok": False,
+        "sql": sql,
+        "iterations": iterations,
+        "last_judge": last_judge,
+        "plan": plan_snapshot,
+        "sql_sequence": sql_sequence_snapshot,
+    }    
 
 
 # 聊天界面
@@ -245,6 +268,8 @@ def api_chat():
         # 先进行带判别与修复闭环的 SQL 生成
         loop_res = generate_sql_with_validation(user_msg, db_name, table_name, db)
         sql = normalize_sql(loop_res.get("sql") or "")
+        plan_steps = loop_res.get("plan") or ([] if not sql else [user_msg])
+        sql_sequence = loop_res.get("sql_sequence") or ([sql] if sql else [])
         msgs = []
         # 输出判别过程
         for it in (loop_res.get("iterations") or []):
@@ -264,10 +289,27 @@ def api_chat():
                 content_parts.append(f"SQL解释: {explanation}")
             content = "\n".join([part for part in content_parts if part])
             msgs.append({"type": "judge", "valid": valid, "content": content})
-        if sql:
-            msgs.append({"type": "sql", "content": sql})
-            # 2. 执行 SQL
-            results = db.execute_query(sql)
+        if plan_steps and len(plan_steps) > 1:
+            plan_lines = [f"{idx + 1}. {step}" for idx, step in enumerate(plan_steps)]
+            plan_text = "子问题规划:\n" + "\n".join(plan_lines)
+            msgs.append({"type": "text", "content": plan_text})
+        else:
+            msgs.append({"type": "text", "content": "不需要生成子问题规划。"})
+        if sql_sequence:
+            # 默认展示最终 SQL，保持与原逻辑兼容
+            if sql:
+                msgs.append({"type": "sql", "content": sql})
+            else:
+                msgs.append({"type": "sql", "content": sql_sequence[-1]})
+
+            # 2. 依次执行 SQL 序列
+            results = None
+            for step_sql in sql_sequence:
+                if not step_sql:
+                    continue
+                step_sql = normalize_sql(step_sql)
+                current_res = db.execute_query(step_sql)
+                results = current_res if current_res is not None else results
             if results and isinstance(results, list) and results and isinstance(results[0], dict):
                 df = results_to_dataframe(results)
                 preview_df = df.head(100)
@@ -288,7 +330,7 @@ def api_chat():
     finally:
         db.close()
 
-
+ 
 @app.get("/api/databases")
 def api_databases():
     steps = ["连接数据库", "列出数据库"]

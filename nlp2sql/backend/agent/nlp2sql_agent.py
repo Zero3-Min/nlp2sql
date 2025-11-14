@@ -22,6 +22,11 @@ class Nlp2SqlAgent(BaseAgent):
         self.llm_assistant = kwargs.get("llm_assistant")
         self.max_preview_rows: int = int(kwargs.get("max_preview_rows", 20))
         self._logger = logging.getLogger(self.__class__.__name__)
+        # 存储最近一次规划/生成/执行的上下文，便于外部调试或记录
+        self.last_plan: List[str] | None = None
+        self.last_sql_sequence: List[str] | None = None
+        self.last_execution_results: List[Any] | None = None
+        self._last_step_context: List[Dict[str, Any]] | None = None
 
     #流式输出结果获取处理
     def _get_last_llm_output(self, assistant, messages, stream: bool = True) -> str:
@@ -192,86 +197,6 @@ class Nlp2SqlAgent(BaseAgent):
                 result[colname] = {"distinct": [], "constrained": False}
         return result
 
-    def _transfer_query(self, user_nl: str) -> str:
-        """
-        将用户原始问题交给大模型做“拆解与重写”，输出一条更清晰、唯一且可直接用于生成 SQL 的自然语言。
-        约束：
-        - 只输出一行自然语言（不要 SQL / 代码块 / 解释）；
-        - 不改变原本语义，不臆造不存在的信息；
-        - 若原问题已足够清晰，可做轻微润色或原样返回。
-        """
-        try:
-            if not user_nl:
-                return user_nl
-            if self.llm_assistant is None:
-                return user_nl
-
-            system_prompt = (
-                "你是自然语言查询规范化助手。\n"
-                "任务：将用户的口语化或含糊问题拆解为清晰、结构化的自然语言问题，以便后续生成正确的 SQL 查询。\n"
-                "\n"
-                "要求：\n"
-                "1) 这是一个独立任务，忽略任何上下文；\n"
-                "2) 输出仅一行自然语言，不输出 SQL、代码块、解释或项目列表；\n"
-                "3) 不凭空添加表名、列名或业务假设，只对表达逻辑进行明确化；\n"
-                "4) 必须保留用户原意，但补全以下必要要素（如原句含糊时）：\n"
-                "    • 时间范围（如“近一年”“本月”“截至目前”）\n"
-                "    • Top N 或排序方向（最高/最低/前N/后N）\n"
-                "    • 分组口径（每个/各个/按…分组）\n"
-                "    • 聚合类型（平均值、总和、数量等）\n"
-                "    • 筛选条件（若缺乏明确约束，可补充“在所有记录中”）\n"
-                "5) 当问题出现下列模式时，需自动识别语义并规范化：\n"
-                "    - “每个/各个/各/每家/分别/不同/按…” → 表示需要分组聚合；\n"
-                "    - “中最高/中最多/中最大/中最小” → 表示分组内极值（每组取Top1）；\n"
-                "    - “最高/最多/最大/最小”但未指明分组 → 表示全局极值（全表取Top1）；\n"
-                "6) 若涉及比较、排序或TopN，请明确排序依据（如人数、工资、库存量等）及方向；\n"
-                "7) 输出语言与原问题一致，使用自然、流畅的书面表达。\n"
-                "\n"
-                "=============================\n"
-                "【输入→输出 示例】\n"
-                "=============================\n"
-                "输入：各个医院中医生人数最多的科室\n"
-                "输出：对于每家医院，分别统计每个科室的医生数量，再找出在该医院中医生人数最多的科室。\n"
-                "\n"
-                "输入：每个医院中平均工资最高的职称\n"
-                "输出：对每家医院计算各个职称的平均工资，再找出在该医院中平均工资最高的职称。\n"
-                "\n"
-                "输入：平均工资最高的职称\n"
-                "输出：在所有职称中，先计算平均工资，再找出平均工资最高的职称。\n"
-                "\n"
-                "输入：近一年中每个月的门诊人数变化趋势\n"
-                "输出：统计过去一年中每个月的门诊人数，并展示门诊人数随时间的变化趋势。\n"
-                "\n"
-                "输入：各药品类别中库存占比最高的药品\n"
-                "输出：在每个药品类别中，计算各药品库存占比，并找出库存占比最高的药品。\n"
-            )
-
-            user_prompt = (
-                f"原始用户问题：{user_nl}\n\n"
-                "请输出一条重写后的自然语言查询句子，满足上述要求。只输出这一句。"
-            )
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ]
-            text = self._get_last_text_output(self.llm_assistant, messages, stream=True)
-            # 规范化：去除围栏/多余空白
-            t = (text or "").strip()
-            if t.startswith("```") and t.endswith("```"):
-                t = t.strip("`")
-            t = t.strip()
-            # 防护：若错误产出 SQL，则回退原问题
-            low = t.lower()
-            if any(kw in low for kw in ["select ", "insert ", "update ", "delete ", "create ", "drop "]):
-                return user_nl
-            # 将多行压缩为一行
-            t = " ".join(t.split())
-            print(t)
-            return t
-        except Exception as e:
-            self._logger.warning(f"transfer_query 失败，回退原问题: {e}")
-            return user_nl
-
     def _build_system_prompt(self) -> str:
         system_prompt = (
                 "你是一个资深的 SQL 助手，擅长将用户的自然语言问题精确地转换为 MySQL 查询语句。\n"
@@ -379,6 +304,7 @@ class Nlp2SqlAgent(BaseAgent):
             "请基于上述信息，生成一条满足需求的 MySQL 查询语句。仅输出 SQL。"
         )
 
+
     def _postprocess_sql(self, sql: str, database: str, table: str) -> str:
         # 最后的 SQL 后处理，确保符合要求
         if not sql:
@@ -400,37 +326,125 @@ class Nlp2SqlAgent(BaseAgent):
             sql = sql.replace(f"`{table}`", target)
 
         return sql
-
-    def run(self, user_nl: str, database: str, table: str, conn: Any, fix_suggestion: str | None = None) -> str:
-        """
-        主入口：返回 SQL 字符串；失败返回空字符串。
-        """
-        if not user_nl or not database or not table or conn is None:
-            return ""
-
-        # ① 先做自然语言规范化/拆解重写，得到更清晰的查询语句
-        refined_nl = self._transfer_query(user_nl)
-
-        # ② 拉取结构信息与字段取值提示
-        schema = self._fetch_schema(conn, database, table)
-        col_distincts = self._fetch_column_distincts(conn, database, table, schema["columns"], limit=10)
-
-        # ③ 使用“SQL 生成”专用提示词（与 transfer 提示分离，互不干扰）
-        system_prompt = self._build_system_prompt()
-        user_prompt = self._build_user_prompt(refined_nl, schema, col_distincts, fix_suggestion=fix_suggestion)
-
-        # # 无 LLM 时的保守兜底
-        # if self.llm_assistant is None:
-        #     self._logger.warning("llm_assistant 未配置，使用兜底 SQL")
-        #     return f"SELECT * FROM `{database}`.`{table}` LIMIT 1000;"
-
+    
+    def _plan_subqueries(self, user_nl: str) -> List[str]:
+        """判断是否需要拆解为子问题，返回子问题列表。"""
+        if not user_nl:
+            return []
+        if self.llm_assistant is None:
+            return [user_nl]
+        system_prompt = (
+            "你是一名SQL问题规划专家。\n"
+            "任务：判断用户的问题是否需要拆分，并在需要时生成一组子问题，帮助逐步求解。\n"
+            "要求：\n"
+            "1) 输出必须是 JSON，对象包含 need_split (bool) 与 sub_queries (list[str])。\n"
+            "2) 当问题无需拆分时，sub_queries 只包含原问题；need_split 为 false。\n"
+            "3) 当需要拆分时，sub_queries 列表按执行顺序排列，最后一个子问题必须直接回答原始问题。\n"
+            "4) 不得添加表名或臆造字段，只能改写或细化原始语义。\n"
+            "5) JSON 之外不得包含任何说明或标点。"
+        )
+        user_prompt = (
+            f"原始用户问题：{user_nl}\n"
+            "请输出满足上述要求的 JSON。"
+        )
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        raw = self._get_last_text_output(self.llm_assistant, messages, stream=True)
+        text = (raw or "").strip()
+        if text.startswith("```") and text.endswith("```"):
+            text = text.strip("`")
+        text = text.strip()
+        try:
+            data = json.loads(text)
+            steps = data.get("sub_queries") or data.get("steps") or []
+            if isinstance(steps, list):
+                cleaned = [str(s).strip() for s in steps if str(s).strip()]
+            else:
+                cleaned = []
+            need_split = bool(data.get("need_split"))
+            if cleaned:
+                if need_split and len(cleaned) >= 2:
+                    return cleaned
+                if not need_split:
+                    return cleaned
+        except Exception as exc:  # pragma: no cover - 容错
+            self._logger.debug("plan_subqueries 解析失败，回退原问题: %s", exc)
+        return [user_nl]
+    
+    def _generate_sql_for_query(
+        self,
+        user_nl: str,
+        database: str,
+        table: str,
+        schema: Dict[str, Any],
+        col_distincts: Dict[str, Dict[str, Any]],
+        system_prompt: str,
+        fix_suggestion: str | None = None,
+    ) -> str:
+        user_prompt = self._build_user_prompt(user_nl, schema, col_distincts, fix_suggestion=fix_suggestion)
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
         sql = self._get_last_llm_output(self.llm_assistant, messages, stream=True)
-        
         if isinstance(sql, dict) and "content" in sql:
             sql = sql["content"]
-        
         return self._postprocess_sql(sql, database, table)
+
+    def run(
+        self,
+        user_nl: str,
+        database: str,
+        table: str,
+        conn: Any,
+        fix_suggestion: str | None = None,
+        execute: bool = True,
+    ) -> Any:
+        """
+        主入口：
+
+        - 默认返回最终 SQL 字符串。
+        - 当 execute=True 时，返回包含规划、SQL 序列与执行结果的字典。
+        """
+        if not user_nl or not database or not table or conn is None:
+            return "" if not execute else {"plan": [], "sql_sequence": [], "results": [], "final_result": None}
+
+        plan = self._plan_subqueries(user_nl)
+        if not plan:
+            plan = [user_nl]
+
+        schema = self._fetch_schema(conn, database, table)
+        col_distincts = self._fetch_column_distincts(conn, database, table, schema["columns"], limit=10)
+        system_prompt = self._build_system_prompt()
+
+        sql_sequence: List[str] = []
+        execution_results: List[Any] = []
+
+        for idx, sub_query in enumerate(plan):
+            fix = fix_suggestion if idx == len(plan) - 1 else None
+            sql = self._generate_sql_for_query(sub_query, database, table, schema, col_distincts, system_prompt, fix_suggestion=fix)
+            sql_sequence.append(sql)
+            if execute:
+                try:
+                    result = conn.execute_query(sql)
+                except Exception as exc:  # pragma: no cover - 数据库异常容错
+                    self._logger.warning("执行 SQL 失败: %s", exc)
+                    result = None
+                execution_results.append(result)
+
+        self.last_plan = plan
+        self.last_sql_sequence = sql_sequence
+        self.last_execution_results = execution_results if execute else None
+
+        if execute:
+            final_result = execution_results[-1] if execution_results else None
+            return {
+                "plan": plan,
+                "sql_sequence": sql_sequence,
+                "results": execution_results,
+                "final_result": final_result,
+            }
+
+        return sql_sequence[-1] if sql_sequence else ""
