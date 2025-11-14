@@ -121,7 +121,7 @@ flask run -h 0.0.0.0 -p 5001 # (port 可换)
 
 ## HighPoints
 
-1. 添加 unique 到 prompt
+1. 添加 DISTINCT 到 prompt
 2. 多轮 agent 判别分析
 
 ## Issues

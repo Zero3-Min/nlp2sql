@@ -144,34 +144,7 @@ ANALYSIS_SINGLETON = None
 SQL_JUDGE_SINGLETON = None
 
 
-def fetch_table_schema(db, database: str, table: str) -> Dict[str, Any]:
-    schema: Dict[str, Any] = {"database": database, "table": table, "columns": []}
-    sql = f"SHOW FULL COLUMNS FROM `{database}`.`{table}`;"
-    try:
-        rows = db.execute_query(sql)
-    except Exception:
-        rows = None
-    if not rows:
-        return schema
-    columns: List[Dict[str, Any]] = []
-    for row in rows:
-        name = row.get("Field") or row.get("COLUMN_NAME") or row.get("field")
-        if not name:
-            continue
-        columns.append(
-            {
-                "name": name,
-                "type": row.get("Type")
-                or row.get("COLUMN_TYPE")
-                or row.get("type")
-                or "",
-                "nullable": (row.get("Null") or row.get("IS_NULLABLE") or "").upper()
-                in ("YES", "TRUE", "Y"),
-                "comment": row.get("Comment") or row.get("COLUMN_COMMENT") or "",
-            }
-        )
-    schema["columns"] = columns
-    return schema
+
 
 
 def get_llm():
@@ -219,9 +192,8 @@ def generate_sql_with_validation(user_query: str, db_name: str, table_name: str,
         fix_suggestion=fix,
     )
     last_judge = None
-    schema = fetch_table_schema(db, db_name, table_name)
-    for _ in range(3):
-        jr = judge_agent.run(user_query, sql, schema=schema, db=db)
+    for _ in range(5):
+        jr = judge_agent.run(user_query, sql, table_name=table_name, db_name=db_name, db=db)
         # 记录每轮判别及对应SQL
         it = dict(jr)
         it["sql"] = sql
@@ -282,7 +254,6 @@ def api_chat():
             it_sql = it.get("sql", "")
             status = "通过" if valid else "失败"
             explanation = it.get("sql_nl_explanation", "")
-            similarity = it.get("semantic_similarity")
             content_parts = [
                 f"[判别{status}]",
                 f"SQL: {it_sql}",
@@ -291,11 +262,6 @@ def api_chat():
             ]
             if explanation:
                 content_parts.append(f"SQL解释: {explanation}")
-            if similarity is not None:
-                try:
-                    content_parts.append(f"语义相似度: {float(similarity):.3f}")
-                except Exception:
-                    pass
             content = "\n".join([part for part in content_parts if part])
             msgs.append({"type": "judge", "valid": valid, "content": content})
         if sql:
@@ -397,41 +363,6 @@ def api_generate_sql():
         return jsonify({"ok": False, "error": f"生成 SQL 失败: {e}", "steps": steps}), 500
     finally:
         db.close()
-
-
-@app.post("/api/generate_sql_validated")
-def api_generate_sql_validated():
-    data = request.get_json(force=True)
-    database = data.get("database")
-    table = data.get("table")
-    user_nl = data.get("query", "").strip()
-    if not database or not table or not user_nl:
-        return jsonify({"ok": False, "error": "参数不完整(database/table/query)"}), 400
-
-    t0 = time.time()
-    steps = [f"选择数据库: {database}", f"选择表: {table}"]
-    db = create_db()
-    if not db.connect_to_database():
-        return jsonify({"ok": False, "error": "数据库连接失败", "steps": steps}), 500
-    try:
-        if not db.select_database(database):
-            return jsonify({"ok": False, "error": "无法切换到所选数据库", "steps": steps}), 400
-        t1 = time.time()
-        loop_res = generate_sql_with_validation(user_nl, database, table, db)
-        t3 = time.time()
-        steps += [f"生成+判别闭环: {(t3 - t1):.2f}s"]
-        return jsonify({
-            "ok": bool(loop_res.get("ok")),
-            "sql": loop_res.get("sql"),
-            "judge": loop_res,
-            "steps": steps,
-            "timing": {"total": round(t3 - t0, 2)}
-        })
-    except Exception as e:
-        return jsonify({"ok": False, "error": f"生成 SQL 失败: {e}", "steps": steps}), 500
-    finally:
-        db.close()
-
 
 @app.post("/api/execute")
 def api_execute():

@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 import json
 import logging
-import math
 import re
 
 try:
@@ -20,27 +19,10 @@ class SqlJudgeAgent(BaseAgent):
     """多层 SQL 判别 Agent。
 
     职责：
-      1. sqlglot 语法解析 + 字段合法性检查
-      2. 通过 LLM 做语义一致性判断与 SQL→NL 解释
-      3. Query 与 SQL 自然语言解释的相似度校验
-      4. EXPLAIN/LIMIT 0 级别的可执行性预检查
-      5. 汇总为统一 JSON，必要时给出修复建议
+      1. 通过 LLM 做语义一致性判断与 SQL→NL 解释
+      2. EXPLAIN/LIMIT 0 级别的可执行性预检查
+      3. 汇总为统一 JSON，并将结果整合sql语句，一起检查，必要时给出修复建议
     """
-
-    AGGREGATE_FUNCTIONS = {
-        "avg",
-        "count",
-        "count_distinct",
-        "sum",
-        "max",
-        "min",
-        "stddev",
-        "stddev_pop",
-        "stddev_samp",
-        "variance",
-        "var_pop",
-        "var_samp",
-    }
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -48,133 +30,11 @@ class SqlJudgeAgent(BaseAgent):
         self._logger = logging.getLogger(self.__class__.__name__)
         self.similarity_threshold: float = float(kwargs.get("similarity_threshold", 0.82))
 
-    # ----------------------------------
-    # 语法与结构校验
-    # ----------------------------------
-    def _check_syntax(self, sql: str, schema: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-        info: Dict[str, Any] = {
-            "valid": True,
-            "errors": [],
-            "columns_used": [],
-            "unknown_columns": [],
-            "aggregated_columns": [],
-            "non_aggregated_columns": [],
-            "group_by_columns": [],
-            "tables": [],
-        }
-        clean_sql = (sql or "").strip().rstrip(";")
-        if not clean_sql:
-            info["valid"] = False
-            info["errors"].append("SQL 为空")
-            return info
-
-        if parse_one is None or exp is None:
-            info["valid"] = False
-            info["errors"].append("sqlglot 未安装，无法执行语法校验")
-            return info
-
-        try:
-            parsed = parse_one(clean_sql, read="mysql")
-            info["ast"] = parsed.to_s()
-        except ParseError as exc:
-            info["valid"] = False
-            info["errors"].append(f"SQL 解析失败: {exc}")
-            return info
-        except Exception as exc:  # pragma: no cover - 容错兜底
-            info["valid"] = False
-            info["errors"].append(f"SQL 解析异常: {exc}")
-            return info
-
-        # 表名提取
-        tables = {
-            self._normalize_identifier(tbl.name)  # type: ignore[arg-type]
-            for tbl in parsed.find_all(exp.Table)
-            if getattr(tbl, "name", None)
-        }
-        info["tables"] = sorted(tables)
-
-        schema_columns = {
-            self._normalize_identifier(col.get("name"))
-            for col in (schema or {}).get("columns", [])
-            if col.get("name")
-        }
-
-        # 列检查
-        used_columns: set[str] = set()
-        for col in parsed.find_all(exp.Column):
-            col_name = self._normalize_identifier(getattr(col, "name", None))
-            if not col_name or col_name == "*":
-                continue
-            used_columns.add(col_name)
-        info["columns_used"] = sorted(used_columns)
-
-        if schema_columns:
-            unknown_cols = sorted(c for c in used_columns if c not in schema_columns)
-            if unknown_cols:
-                info["valid"] = False
-                info["unknown_columns"] = unknown_cols
-                info["errors"].append("字段不存在: " + ", ".join(unknown_cols))
-
-        # 聚合字段校验
-        select_expr = parsed.find(exp.Select)
-        aggregated_columns: set[str] = set()
-        non_aggregated_columns: set[str] = set()
-        uses_aggregate = False
-        if select_expr is not None:
-            for proj in select_expr.expressions:
-                has_aggregate = False
-                for func in proj.find_all(exp.Func):
-                    fname = self._normalize_identifier(getattr(func, "name", None))
-                    if fname and fname in self.AGGREGATE_FUNCTIONS:
-                        has_aggregate = True
-                        uses_aggregate = True
-                target_columns = {
-                    self._normalize_identifier(getattr(col, "name", None))
-                    for col in proj.find_all(exp.Column)
-                    if getattr(col, "name", None)
-                }
-                target_columns = {c for c in target_columns if c and c != "*"}
-                if has_aggregate:
-                    aggregated_columns.update(target_columns)
-                else:
-                    non_aggregated_columns.update(target_columns)
-
-            group_expr = select_expr.args.get("group")
-            group_columns: set[str] = set()
-            if isinstance(group_expr, exp.Group):
-                for g in group_expr.expressions:
-                    for col in g.find_all(exp.Column):
-                        name = self._normalize_identifier(getattr(col, "name", None))
-                        if name and name != "*":
-                            group_columns.add(name)
-            info["group_by_columns"] = sorted(group_columns)
-            info["aggregated_columns"] = sorted(aggregated_columns)
-            info["non_aggregated_columns"] = sorted(non_aggregated_columns)
-
-            if uses_aggregate and non_aggregated_columns:
-                diff = sorted(non_aggregated_columns - group_columns)
-                if diff:
-                    info["valid"] = False
-                    info["errors"].append(
-                        "存在未分组字段: " + ", ".join(diff)
-                    )
-
-        expected_table = self._normalize_identifier((schema or {}).get("table"))
-        if expected_table and expected_table not in tables:
-            info["valid"] = False
-            info["errors"].append(f"SQL 未引用目标表 `{expected_table}`")
-
-        return info
 
     # ----------------------------------
     # 语义 LLM 校验（含 SQL→NL）
     # ----------------------------------
-    def _semantic_alignment(
-        self,
-        user_query: str,
-        sql_generated: str,
-        schema: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+    def _semantic_alignment(self, user_query: str, sql_generated: str, schema: Optional[Dict[str, Any]],) -> Dict[str, Any]:
         if not self.llm_assistant:
             return {
                 "valid": False,
@@ -196,14 +56,110 @@ class SqlJudgeAgent(BaseAgent):
         schema_text = "\n".join(schema_lines) if schema_lines else "未知"
 
         system_prompt = (
-            "你是 MySQL 专家，负责判断 SQL 是否满足用户需求，并把 SQL 转写为自然语言解释。\n"
-            "请输出 JSON，键包括：\n"
-            "semantic_valid (bool)、semantic_reason (string)、sql_nl_explanation (string)、fix_suggestion (string)、confidence (0-1)。"
-        )
+        '''
+            你是一个专业的 MySQL 数据库专家和高级业务分析师，职责是：
+            1) 判断模型生成的 SQL 是否满足用户的自然语言需求（语义一致性判定）
+            2) 判断 SQL 是否在 MySQL 语法和功能范围内（能力一致性判定）
+            3) 将 SQL 转换成自然语言解释（SQL→NL）
+            4) 如果 SQL 不正确，给出具体的修复建议（Fix Suggestion）
+            5) 最终输出结构化 JSON（严格遵守字段要求）
+
+            你必须严格执行下述原则：
+
+            ====================
+            【A. 语义一致性判定规则】
+            ====================
+            你需要判断 SQL 是否真正满足用户的问题，而不是仅仅语法正确。
+            特别关注以下错误场景：
+
+            1. 分组语义错误
+            “各医院 / 按医院 / 每个医院” → 必须 GROUP BY hospital_id
+            “全部医院的平均值” → 不应该分组
+
+            2. 聚合方向错误
+            用户要求“求总数”，却用了 AVG()
+            用户要求“求平均值”，却用了 SUM()
+            用户要求“前 N 名”，却未排序或排序方向错误
+
+            3. 过滤条件遗漏
+            用户问题中包含日期区间、医院、状态、级别、科室等过滤条件
+            SQL 中却没有 WHERE 对应过滤
+
+            4. 范围 / 时间语义误解
+            “最近7天” → 需要 NOW() - INTERVAL 7 DAY
+            “今年” → YEAR(date_col) = YEAR(CURDATE())
+
+            5. 排序语义错误
+            “最高的”“最大的”“前 N 名” → 必须 DESC
+            “最低的”“最小的” → 必须 ASC
+            用户未指定 → 默认 ASC（升序）
+
+            6. 字段误解
+            “医院数量” ≠ “床位数量”
+            “医生数量” ≠ “医生表中的科室数量”
+
+            7. 多字段同时比较
+            用户要求“每个医院、每个科室”，SQL 却只按医院分组
+
+            你必须基于语义判断，而不是仅看 SQL 表面的结构。
+
+            ====================
+            【B. MySQL 能力一致性检查】
+            ====================
+            请检查 SQL 是否能在 MySQL 中正常执行。
+
+            包括但不限于：
+
+            1. 禁止在 MySQL 中使用不支持的关键字  
+            如 TOP、QUALIFY、DISTINCT ON 等
+
+            2. 窗口函数必须符合 MySQL 8.0 规范  
+            - COUNT(*) OVER(PARTITION BY) 可以  
+            - MAX(COUNT(*)) OVER(...)（嵌套聚合）不合法  
+
+            3. HAVING 中使用别名的行为需符合 MySQL 规则
+
+            4. 子查询必须能返回对应维度  
+            不允许多列不匹配的 IN 子查询
+
+            如果 SQL 存在“语义正确但 MySQL 无法执行”的情况，你必须判定为 **semantic_valid = false** 并给出修复建议。
+
+            ====================
+            【C. SQL → 自然语言解释规则】
+            ====================
+            你必须输出一段自然语言解释，让用户可以理解 SQL 做了什么。
+            解释需包含：
+            - 查询了哪张表
+            - 过滤条件是什么
+            - 是否分组
+            - 是否聚合
+            - 排序规则
+            - 结果代表什么含义
+
+            ====================
+            【D. 输出格式（JSON）】
+            ====================
+            最终输出必须是 JSON，对象结构如下：
+
+            {
+            "semantic_valid": true/false,         # SQL 是否满足用户意图（语义一致性）
+            "semantic_reason": "原因说明",        # 若 false，说明哪里不一致
+            "sql_nl_explanation": "SQL 的自然语言解释",
+            "fix_suggestion": "如需修改，给出具体修复建议；否则为空字符串",
+            "confidence": 0.00 ~ 1.00            # 判定置信度
+            }
+
+            要求：
+            - 必须输出 JSON
+            - 不得在 JSON 外输出任何多余内容
+            - 所有字符串必须是单行文本，不得包含换行符
+            - 字段必须全部包含，即使为空也必须返回
+        ''')
+        
         user_prompt = (
             f"用户问题: {user_query}\n"
             f"SQL: {sql_generated}\n"
-            f"表结构:\n{schema_text}\n"
+            f"表结构:{schema_text}\n"
             "请严格输出 JSON，不要附加说明。"
         )
 
@@ -238,34 +194,6 @@ class SqlJudgeAgent(BaseAgent):
             "confidence": confidence,
             "errors": errors,
         }
-
-    # ----------------------------------
-    # 嵌入相似度（Bag-of-Words）
-    # ----------------------------------
-    def _embedding_similarity(self, query: str, sql_nl: str) -> Dict[str, Any]:
-        tokens_a = self._tokenize(query)
-        tokens_b = self._tokenize(sql_nl)
-        info: Dict[str, Any] = {
-            "valid": False,
-            "score": 0.0,
-            "threshold": self.similarity_threshold,
-            "errors": [],
-        }
-        if not tokens_a or not tokens_b:
-            info["errors"].append("文本不足，无法计算相似度")
-            return info
-
-        vec_a = self._vectorize(tokens_a)
-        vec_b = self._vectorize(tokens_b)
-        score = self._cosine(vec_a, vec_b)
-        info["score"] = score
-        if score >= self.similarity_threshold:
-            info["valid"] = True
-        else:
-            info["errors"].append(
-                f"相似度过低（{score:.2f} < {self.similarity_threshold:.2f}）"
-            )
-        return info
 
     # ----------------------------------
     # 执行前检查
@@ -314,44 +242,6 @@ class SqlJudgeAgent(BaseAgent):
     # ----------------------------------
     # 工具方法
     # ----------------------------------
-    @staticmethod
-    def _normalize_identifier(value: Optional[str]) -> str:
-        if not value:
-            return ""
-        s = str(value)
-        s = s.replace("`", "")
-        if "." in s:
-            s = s.split(".")[-1]
-        return s.strip().lower()
-
-    @staticmethod
-    def _tokenize(text: str) -> List[str]:
-        if not text:
-            return []
-        return re.findall(r"[\w]+", text.lower())
-
-    @staticmethod
-    def _vectorize(tokens: Iterable[str]) -> Dict[str, float]:
-        vec: Dict[str, float] = {}
-        total = 0
-        for token in tokens:
-            vec[token] = vec.get(token, 0.0) + 1.0
-            total += 1
-        if total:
-            for k in list(vec.keys()):
-                vec[k] /= total
-        return vec
-
-    @staticmethod
-    def _cosine(vec_a: Dict[str, float], vec_b: Dict[str, float]) -> float:
-        keys = set(vec_a) | set(vec_b)
-        dot = sum(vec_a.get(k, 0.0) * vec_b.get(k, 0.0) for k in keys)
-        norm_a = math.sqrt(sum(v * v for v in vec_a.values()))
-        norm_b = math.sqrt(sum(v * v for v in vec_b.values()))
-        if not norm_a or not norm_b:
-            return 0.0
-        return dot / (norm_a * norm_b)
-
     def _parse_json(self, text: str) -> Dict[str, Any]:
         s = (text or "").strip()
         fence = re.compile(r"^```(?:json)?\s*\n([\s\S]*?)\n```\s*$", re.IGNORECASE)
@@ -374,14 +264,6 @@ class SqlJudgeAgent(BaseAgent):
         except Exception:
             pass
         return {}
-
-    def _normalize_result(self, obj: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            "valid": bool(obj.get("valid", False)),
-            "reason": str(obj.get("reason", "")),
-            "fix_suggestion": str(obj.get("fix_suggestion", "")),
-            "need_regenerate": bool(obj.get("need_regenerate", not bool(obj.get("valid", False))))
-        }
     
 
     def _aggregate_errors(self, *items: Tuple[Dict[str, Any], str]) -> List[str]:
@@ -397,6 +279,36 @@ class SqlJudgeAgent(BaseAgent):
             elif default_msg:
                 errors.append(default_msg)
         return [e for e in errors if e]
+
+
+    def fetch_table_schema(db, database: str, table: str) -> Dict[str, Any]:
+        schema: Dict[str, Any] = {"database": database, "table": table, "columns": []}
+        sql = f"SHOW FULL COLUMNS FROM `{database}`.`{table}`;"
+        try:
+            rows = db.execute_query(sql)
+        except Exception:
+            rows = None
+        if not rows:
+            return schema
+        columns: List[Dict[str, Any]] = []
+        for row in rows:
+            name = row.get("Field") or row.get("COLUMN_NAME") or row.get("field")
+            if not name:
+                continue
+            columns.append(
+                {
+                    "name": name,
+                    "type": row.get("Type")
+                    or row.get("COLUMN_TYPE")
+                    or row.get("type")
+                    or "",
+                    "nullable": (row.get("Null") or row.get("IS_NULLABLE") or "").upper()
+                    in ("YES", "TRUE", "Y"),
+                    "comment": row.get("Comment") or row.get("COLUMN_COMMENT") or "",
+                }
+            )
+        schema["columns"] = columns
+        return schema
 
     # 简化版文本流读取（不做分号裁剪）
     def _get_last_text(self, assistant, messages, stream: bool = True) -> str:
@@ -442,18 +354,18 @@ class SqlJudgeAgent(BaseAgent):
         self,
         user_query: str,
         sql_generated: str,
+        db_name: Optional[str] = None,
+        table_name: Optional[str] = None,
         schema: Optional[Dict[str, Any]] = None,
         db: Any = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        # 兼容旧调用：某些地方可能通过关键字参数传入 schema/db
-        if schema is None and "schema" in kwargs:
-            schema = kwargs.get("schema")
+        # 兼容旧调用：某些地方可能通过关键字参数传入 schema/db 
         if db is None and "db" in kwargs:
             db = kwargs.get("db")
-
+        if schema is None and "schema" in kwargs:
+            schema = self.fetch_table_schema(db, db_name, table_name)
         try:
-            syntax_info = self._check_syntax(sql_generated, schema)
             semantic_info = self._semantic_alignment(user_query, sql_generated, schema)
             explanation = semantic_info.get("sql_nl_explanation", "")
             sql2nl_info = {
@@ -461,28 +373,23 @@ class SqlJudgeAgent(BaseAgent):
                 "explanation": explanation,
                 "errors": [] if explanation else ["未生成 SQL 自然语言解释"],
             }
-            embedding_info = self._embedding_similarity(user_query, explanation or sql_generated)
             execution_info = self._execution_check(sql_generated, db)
 
             combined_errors = self._aggregate_errors(
-                (syntax_info, "语法校验失败"),
                 (semantic_info, "语义判定失败"),
                 (sql2nl_info, "SQL→自然语言解释缺失"),
-                (embedding_info, "语义相似度不足"),
                 (execution_info, "SQL 无法执行"),
             )
 
             valid = (
-                syntax_info.get("valid")
-                and semantic_info.get("valid")
+                semantic_info.get("valid")
                 and sql2nl_info.get("valid")
-                and embedding_info.get("valid")
                 and execution_info.get("valid")
             )
 
             reason = combined_errors[0] if combined_errors else "SQL 校验通过"
             fix_candidates: List[str] = []
-            for item in (semantic_info, syntax_info, execution_info):
+            for item in (semantic_info, execution_info):
                 fix = item.get("fix_suggestion") if isinstance(item, dict) else None
                 if fix:
                     fix_candidates.append(str(fix))
@@ -496,13 +403,10 @@ class SqlJudgeAgent(BaseAgent):
                 "reason": reason,
                 "fix_suggestion": fix_suggestion,
                 "sql_nl_explanation": explanation,
-                "semantic_similarity": float(embedding_info.get("score", 0.0)),
                 "need_regenerate": not bool(valid),
                 "details": {
-                    "syntax": syntax_info,
                     "semantic": semantic_info,
                     "sql2nl": sql2nl_info,
-                    "embedding": embedding_info,
                     "execution": execution_info,
                 },
             }
@@ -515,7 +419,6 @@ class SqlJudgeAgent(BaseAgent):
                 "reason": f"判别异常: {exc}",
                 "fix_suggestion": "请检查 SQL 语法、字段及分组条件后重试",
                 "sql_nl_explanation": "",
-                "semantic_similarity": 0.0,
                 "need_regenerate": True,
                 "details": {},
             }
