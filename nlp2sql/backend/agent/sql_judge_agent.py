@@ -281,7 +281,7 @@ class SqlJudgeAgent(BaseAgent):
         return [e for e in errors if e]
 
 
-    def fetch_table_schema(db, database: str, table: str) -> Dict[str, Any]:
+    def fetch_table_schema(self, db, database: str, table: str) -> Dict[str, Any]:
         schema: Dict[str, Any] = {"database": database, "table": table, "columns": []}
         sql = f"SHOW FULL COLUMNS FROM `{database}`.`{table}`;"
         try:
